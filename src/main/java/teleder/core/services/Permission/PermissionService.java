@@ -1,15 +1,10 @@
 package teleder.core.services.Permission;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import teleder.core.models.Permission.Permission;
-import teleder.core.models.User.User;
-import teleder.core.repositories.IGroupRepository;
-import teleder.core.repositories.IUserRepository;
+import teleder.core.services.Permission.dtos.CreatePermissionDto;
+import teleder.core.services.Permission.dtos.PermissionDto;
+import teleder.core.services.Permission.dtos.UpdatePermissionDto;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -19,25 +14,33 @@ public class PermissionService implements IPermissionService {
 
     @Override
     @Async
-    public CompletableFuture<Permission>  getOne(String id) {
+    public CompletableFuture<PermissionDto> create(CreatePermissionDto input) {
         return null;
     }
 
     @Override
     @Async
-    public CompletableFuture<List<Permission>>  getAll() {
+    public CompletableFuture<PermissionDto> getOne(String id) {
         return null;
     }
 
     @Override
     @Async
-    public CompletableFuture<Permission > update(String id, Permission Permission) {
+    public CompletableFuture<List<PermissionDto>> getAll() {
         return null;
     }
 
     @Override
-    public void delete(String id) {
+    @Async
+    public CompletableFuture<PermissionDto> update(String id, UpdatePermissionDto input) {
+        return null;
+    }
 
+
+    @Override
+    @Async
+    public CompletableFuture<Void> delete(String id) {
+        return null;
     }
 
 }

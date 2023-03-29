@@ -1,16 +1,10 @@
 package teleder.core.services.Conservation;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import teleder.core.models.Conservation.Conservation;
-import teleder.core.models.User.User;
-import teleder.core.repositories.IGroupRepository;
-import teleder.core.repositories.IConservationRepository;
-import teleder.core.repositories.IUserRepository;
+import teleder.core.services.Conservation.dtos.ConservationDto;
+import teleder.core.services.Conservation.dtos.CreateConservationDto;
+import teleder.core.services.Conservation.dtos.UpdateConservationDto;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -19,26 +13,32 @@ import java.util.concurrent.CompletableFuture;
 public class ConservationService implements IConservationService {
 
     @Override
-    @Async
-    public CompletableFuture<Conservation> getOne(String id) {
+    public CompletableFuture<ConservationDto> create(CreateConservationDto input) {
         return null;
     }
 
     @Override
     @Async
-    public CompletableFuture<List<Conservation>> getAll() {
+    public CompletableFuture<ConservationDto> getOne(String id) {
         return null;
     }
 
     @Override
     @Async
-    public CompletableFuture<Conservation> update(String id, Conservation Conservation) {
+    public CompletableFuture<List<ConservationDto>> getAll() {
         return null;
     }
 
     @Override
-    public void delete(String id) {
+    @Async
+    public CompletableFuture<ConservationDto> update(String id, UpdateConservationDto Conservation) {
+        return null;
+    }
 
+    @Override
+    @Async
+    public CompletableFuture<Void> delete(String id) {
+        return null;
     }
 
 }

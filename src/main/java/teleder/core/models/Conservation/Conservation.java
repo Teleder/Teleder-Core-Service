@@ -10,6 +10,7 @@ import teleder.core.models.User.User;
 
 import java.util.Date;
 import java.util.List;
+
 @Document(collection = "Conservation")
 @Data
 public class Conservation {
@@ -20,19 +21,19 @@ public class Conservation {
     private Date createAt = new Date();
     @LastModifiedDate
     private Date updateAt = new Date();
-
-
-    @Data
-    public class PinMessage {
-        @DBRef
-        private List<Message> pinMessage;
-        @DBRef
-        User pinBy;
-    }
+    boolean isDeleted = false;
 
     public enum Type {
         PERSONAL,
         GROUP
+    }
+
+    @Data
+    public class PinMessage {
+        @DBRef
+        User pinBy;
+        @DBRef
+        private List<Message> pinMessage;
     }
 
 

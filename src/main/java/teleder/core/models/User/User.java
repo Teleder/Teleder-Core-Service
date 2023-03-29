@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import teleder.core.models.Conservation.Conservation;
+import teleder.core.models.File.File;
 
 import java.util.Collection;
 import java.util.Date;
@@ -24,30 +25,27 @@ public class User implements UserDetails {
     private String phone;
     private String email;
     private String bio;
-    private String avatar;
+    @DBRef
+    private File avatar;
     private String QR;
     private List<Block> list_block;
     private String password;
-    private List<Conservation> conservation;
+    private List<Conservation> conservations;
     private Role role = Role.USER;
-
-    public String getRole(){
-        return role.name();
-    }
-    public enum Role{
-        ADMIN,
-        USER
-    }
-//    List <Message> list_
-    @DBRef
-    private List<User> list_contact;
+    //    List <Message> list_
+    private List<Contact> list_contact;
     @CreatedBy
     private Date createAt = new Date();
     @LastModifiedDate
     private Date updateAt = new Date();
     boolean isDeleted = false;
+
     public User() {
         this.firstName = "12";
+    }
+
+    public String getRole() {
+        return role.name();
     }
 
     @Override
@@ -83,5 +81,10 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public enum Role {
+        ADMIN,
+        USER
     }
 }

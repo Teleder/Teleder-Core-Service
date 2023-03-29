@@ -9,11 +9,16 @@ import java.util.Date;
 
 @Data
 public class Block {
+    String reason;
     @DBRef
     private User user;
-    String reason;
     @CreatedBy
-    private Date createAt= new Date();
+    private Date createAt = new Date();
     @LastModifiedDate
-    private Date updateAt= new Date();
+    private Date updateAt = new Date();
+
+    public Block(User user, String reason) {
+        this.user = user;
+        this.reason = reason;
+    }
 }

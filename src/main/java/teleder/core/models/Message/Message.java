@@ -17,6 +17,7 @@ import java.util.List;
 @Document(collection = "Message")
 @Data
 public class Message {
+    boolean isDeleted = false;
     @Id
     private String id;
     @NonNull
@@ -33,7 +34,6 @@ public class Message {
     private Group group;
     private List<Emotion> list_emotion = new ArrayList<>();
     private List<HistoryChange> historyChanges = new ArrayList<>();
-    boolean isDeleted = false;
     @CreatedBy
     private Date createAt = new Date();
     @LastModifiedDate

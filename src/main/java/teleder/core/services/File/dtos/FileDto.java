@@ -6,13 +6,14 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-public class UserDto extends UpdateUserDto {
+public class FileDto extends UpdateFileDto {
+    @JsonProperty(value = "createAt")
+    public Date createAt;
+    @JsonProperty(value = "updateAt")
+    public Date updateAt;
     @JsonProperty(value = "id")
     private String id;
-    @JsonProperty(value = "createAt")
-    public Date createAt ;
-    @JsonProperty(value = "updateAt")
-    public Date updateAt ;
+
     @Override
     public String getPassword() {
         return null; // Ignore password validation

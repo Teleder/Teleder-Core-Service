@@ -4,13 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import teleder.core.models.Group.Group;
-import teleder.core.models.User.User;
-import teleder.core.repositories.IGroupRepository;
 import teleder.core.repositories.IGroupRepository;
 import teleder.core.repositories.IUserRepository;
+import teleder.core.services.Group.dtos.CreateGroupDto;
+import teleder.core.services.Group.dtos.GroupDto;
+import teleder.core.services.Group.dtos.UpdateGroupDto;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -25,27 +23,36 @@ public class GroupService implements IGroupService {
     IUserRepository userRepository;
     @Autowired
     IGroupRepository groupRepository;
+
     @Override
     @Async
-    public CompletableFuture<Group> getOne(String id) {
+    public CompletableFuture<GroupDto> create(CreateGroupDto input) {
         return null;
     }
 
     @Override
     @Async
-    public CompletableFuture<List<Group>> getAll() {
+    public CompletableFuture<GroupDto> getOne(String id) {
         return null;
     }
 
     @Override
     @Async
-    public CompletableFuture<Group> update(String id, Group Group) {
+    public CompletableFuture<List<GroupDto>> getAll() {
         return null;
     }
 
     @Override
-    public void delete(String id) {
+    @Async
+    public CompletableFuture<GroupDto> update(String id, UpdateGroupDto input) {
+        return null;
+    }
 
+
+    @Override
+    @Async
+    public CompletableFuture<Void> delete(String id) {
+        return null;
     }
 
 }

@@ -13,16 +13,27 @@ import java.util.Date;
 @Document(collection = "Group")
 @Data
 public class File {
+
     @Id
     private String id;
     String name;
-    String file_type;
+    FileCategory file_type;
     double file_size;
-    boolean isDeleted = false;
+    String url;
+    String code;
     @DBRef
     private User user_own;
+    boolean isDeleted = false;
     @CreatedBy
     private Date createAt = new Date();
     @LastModifiedDate
     private Date updateAt = new Date();
+
+    public File(String name, FileCategory file_type, double file_size, String url, String code) {
+        this.name = name;
+        this.file_size = file_size;
+        this.file_type = file_type;
+        this.url = url;
+        this.code = code;
+    }
 }

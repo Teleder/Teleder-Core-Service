@@ -8,7 +8,7 @@ import teleder.core.models.User.Block;
 import java.util.List;
 
 @Data
-public class UpdateUserDto extends CreateUserDto{
+public class UpdateUserDto extends CreateUserDto {
     @JsonProperty(value = "avatar")
     private String avatar;
     @JsonProperty(value = "QR")

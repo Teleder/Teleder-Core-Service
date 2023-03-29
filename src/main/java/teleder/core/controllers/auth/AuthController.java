@@ -34,7 +34,7 @@ public class AuthController {
         if (user == null) {
             throw new Exception("Cannot find user with email");
         }
-        if (!jwtUtil.comparePassword(loginRequest.getPassword(), user.getPassword())) {
+        if (!JwtTokenUtil.comparePassword(loginRequest.getPassword(), user.getPassword())) {
             throw new Exception("Password not correct");
         }
         final String accessToken = jwtUtil.generateAccessToken(user);
@@ -47,7 +47,7 @@ public class AuthController {
     public ResponseEntity<?> refreshAuthenticationToken(@RequestBody @Valid RefreshTokenInput refreshTokenRequest) throws Exception {
         final String refreshToken = refreshTokenRequest.getRefreshToken();
         // Check if the refresh token is valid and not expired
-        final User userDetails = userRepository.findByEmail(jwtUtil.getUsernameFromToken(refreshToken));
+        final User userDetails = userRepository.findByPhoneAndEmail(jwtUtil.getUsernameFromToken(refreshToken));
         if (jwtUtil.validateToken(refreshToken, userDetails)) {
             final String accessToken = jwtUtil.generateAccessToken(userDetails);
             return ResponseEntity.ok(new RefreshTokenDto(accessToken, refreshToken));

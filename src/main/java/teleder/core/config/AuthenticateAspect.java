@@ -13,6 +13,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.exceptions.UnauthorizedException;
 import teleder.core.services.User.UserService;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
 @Aspect
 @Component
 @Order(1)
@@ -21,8 +24,9 @@ public class AuthenticateAspect {
     private JwtTokenUtil jwtTokenUtil;
     @Autowired
     private UserService userDetailsService;
+
     @Before("@annotation(teleder.core.config.Authenticate)")
-    public void authenticate(JoinPoint joinPoint) throws UnauthorizedException {
+    public void authenticate(JoinPoint joinPoint) throws UnauthorizedException, NoSuchAlgorithmException, InvalidKeySpecException {
         String token = getTokenFromRequest();
         if (token == null) {
             throw new UnauthorizedException("Unauthorized");
@@ -32,7 +36,6 @@ public class AuthenticateAspect {
         if (token != null && jwtTokenUtil.validateToken(token, userDetails)) {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
             request.setAttribute("user", userDetails);
-            return;
         } else
             throw new UnauthorizedException("Unauthorized");
     }

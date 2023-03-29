@@ -10,9 +10,9 @@ import java.util.Date;
 
 @Data
 public class Member {
+    Role role;
     @DBRef
     private User user;
-    Role role;
     @CreatedBy
     private Date createAt = new Date();
     @LastModifiedDate

@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
-public class CreateUserDto {
+public class CreateFileDto {
     @JsonProperty(value = "firstName", required = true)
     private String firstName;
     @JsonProperty(value = "lastName", required = true)
