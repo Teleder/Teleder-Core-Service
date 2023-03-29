@@ -1,0 +1,16 @@
+spring:
+    data:
+        mongodb:
+#            uri: mongodb://localhost:27017/mydatabase
+            uri: mongodb://20161332:h0N6zNgDazUE7kyd@ac-qhvv0hr-shard-00-00.lvxantz.mongodb.net:27017,ac-qhvv0hr-shard-00-01.lvxantz.mongodb.net:27017,ac-qhvv0hr-shard-00-02.lvxantz.mongodb.net:27017/?ssl=true&replicaSet=atlas-zdwhrs-shard-0&authSource=admin&retryWrites=true&w=majority
+
+jwt:
+    refresh-token-expiration: '86400000'
+    access-token-expiration: '1800000'
+    secret: W1vmiY6pBqp6#i!ly^EgP!n9aWcn9yv&A*1r@c%2Cz8lAuW
+apiVersion: '"1.0.0"'
+apiTitle: '"Teleder Core Service"'
+apiContactEmail: '"teledergmail.com"'
+apiDescription: '"This is first version api for Teleder Core."'
+apiContactUrl: '"NotFound"'
+apiContactName: '"Teleder Admin'

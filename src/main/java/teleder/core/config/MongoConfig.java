@@ -12,10 +12,10 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 @Configuration
-@EnableMongoRepositories(basePackages = "teleder.core.repository")
+@EnableMongoRepositories(basePackages = "teleder.core.repositories")
 public class MongoConfig extends AbstractMongoClientConfiguration {
 
-    @Value("${mongodb.uri}")
+    @Value("${spring.data.mongodb.uri}")
     private String mongoUri;
 
     @Override
