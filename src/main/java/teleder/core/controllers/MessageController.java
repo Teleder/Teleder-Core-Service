@@ -42,14 +42,14 @@ public class MessageController {
     public PagedResultDto<Message> findMessagesWithPaginationAndSearch(@RequestParam(name = "page", defaultValue = "0") int page,
                                                                        @RequestParam(name = "size", defaultValue = "10") int size,
                                                                        @RequestParam(name = "content") String content,
-                                                                       @PathVariable String code) {
+                                                                       @PathVariable(name = "code") String code) {
 
         CompletableFuture<Long> total = messageService.countMessagesByCode(code);
-        CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(page * size, (page + 1) * size, code, content);
+        CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(page * size, size, code, content);
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, messages);
         try {
             allFutures.get();
-            return PagedResultDto.create(Pagination.create(total.get(), page * size, (page + 1) * size), messages.get());
+            return PagedResultDto.create(Pagination.create(total.get(), page * size, size), messages.get());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }

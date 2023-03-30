@@ -10,7 +10,7 @@ import teleder.core.models.User.User;
 
 import java.util.Date;
 
-@Document(collection = "Group")
+@Document(collection = "File")
 @Data
 public class File {
 

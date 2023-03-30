@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.exceptions.NotFoundException;
+import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IGroupRepository;
@@ -65,17 +66,19 @@ public class MessageService implements IMessageService {
 
 
     @Override
-    @MessageMapping("/privateMessage")
-    public void sendPrivateMessage(@Payload Message message) {
+    public void sendPrivateMessage( Message message) {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        // check conservation da tao hay chua neu chua tao thi tao moi
+
+        // add tin nhan vao db
+
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().equals(message.getCode())))
             throw new NotFoundException("Not Found Conservation!");
-        simpMessagingTemplate.convertAndSend("/topic/user." + userId, message);
+        simpMessagingTemplate.convertAndSend("/topic/user." + message.getUser_receive(), message);
     }
 
     @Override
-    @MessageMapping("/groupMessage")
-    public void sendGroupMessage(@Payload Message message) {
+    public void sendGroupMessage( Message message) {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().equals(message.getCode())))
             throw new NotFoundException("Not Found Conservation!");

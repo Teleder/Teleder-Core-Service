@@ -28,11 +28,12 @@ public class FileController {
     public CompletableFuture<File> uploadFileCloud(@RequestPart("file") MultipartFile file, @RequestParam(name = "code") String code) throws IOException {
         return fileService.uploadFileCloud(file, code);
     }
+
     @Async
     @Authenticate
     @DeleteMapping("/cloud/{publicId}")
     public CompletableFuture<Void> deleteFileCloud(@PathVariable String fileName) {
-        return  fileService.deleteFileLocal(fileName);
+        return fileService.deleteFileLocal(fileName);
     }
 
     @Async
@@ -44,10 +45,11 @@ public class FileController {
 
     @Async
     @Authenticate
-    @DeleteMapping("/cloud/{fileName}")
-    public CompletableFuture<Void> deleteFileLocal(@PathVariable  String fileName) {
-        return  fileService.deleteFileLocal(fileName);
+    @DeleteMapping("/local/{fileName}")
+    public CompletableFuture<Void> deleteFileLocal(@PathVariable String fileName) {
+        return fileService.deleteFileLocal(fileName);
     }
+
     @Async
     @Authenticate
     @GetMapping("/{code}")
@@ -56,11 +58,11 @@ public class FileController {
                                                                     @RequestParam(name = "content") String content,
                                                                     @PathVariable String code) {
         CompletableFuture<Long> total = fileService.countFileByCode(code);
-        CompletableFuture<List<File>> files = fileService.findFileWithPaginationAndSearch(page * size, (page + 1) * size, code);
+        CompletableFuture<List<File>> files = fileService.findFileWithPaginationAndSearch(page * size, size, code);
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, files);
         try {
             allFutures.get();
-            return PagedResultDto.create(Pagination.create(total.get(), page * size, (page + 1) * size), files.get());
+            return PagedResultDto.create(Pagination.create(total.get(), page * size, size), files.get());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }

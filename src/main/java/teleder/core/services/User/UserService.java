@@ -1,9 +1,14 @@
 package teleder.core.services.User;
 
+import com.google.zxing.WriterException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,35 +17,57 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 import teleder.core.config.JwtTokenUtil;
+import teleder.core.dtos.PagedResultDto;
+import teleder.core.dtos.Pagination;
 import teleder.core.exceptions.NotFoundException;
+import teleder.core.models.Conservation.Conservation;
+import teleder.core.models.File.File;
 import teleder.core.models.User.Block;
 import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
+import teleder.core.repositories.IConservationRepository;
 import teleder.core.repositories.IUserRepository;
+import teleder.core.services.File.IFileService;
 import teleder.core.services.User.dtos.CreateUserDto;
 import teleder.core.services.User.dtos.UpdateUserDto;
 import teleder.core.services.User.dtos.UserDto;
 import teleder.core.services.User.dtos.UserProfileDto;
+import teleder.core.utils.QRCodeGenerator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 
 @Service
 public class UserService implements IUserService, UserDetailsService {
     @Autowired
     IUserRepository userRepository;
     @Autowired
-    private ModelMapper toDto;
+    IFileService fileService;
 
+    @Autowired
+    private MongoTemplate mongoTemplate;
+    @Autowired
+    IConservationRepository conservationRepository;
+    @Autowired
+    private ModelMapper toDto;
+    private final int width = 300;
+    private final int height = 300;
 
     @Override
     @Async
-    public CompletableFuture<UserDto> create(CreateUserDto input) {
+    public CompletableFuture<UserDto> create(CreateUserDto input) throws WriterException, IOException, ExecutionException, InterruptedException {
         User user = toDto.map(input, User.class);
+        MultipartFile qrCodeImage = QRCodeGenerator.generateQRCodeImage(input.getEmail(), width, height);
+        File file = fileService.uploadFileLocal(qrCodeImage, user.getEmail()).get();
+        user.setAvatar(file);
         user.setPassword(JwtTokenUtil.hashPassword(user.getPassword()));
         return CompletableFuture.completedFuture(toDto.map(userRepository.insert(user), UserDto.class));
     }
@@ -53,62 +80,65 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     @Override
+    @Async
     public CompletableFuture<Boolean> addContact(String contactId) {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<User> contactOptional = userRepository.findById(contactId);
-
         if (userOptional.isPresent() && contactOptional.isPresent()) {
             User user = userOptional.get();
             User contact = contactOptional.get();
             user.getList_contact().add(new Contact(contact, Contact.Status.WAITING));
+            contact.getList_contact().add(new Contact(contact, Contact.Status.REQUEST));
             userRepository.save(user);
+            userRepository.save(contact);
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
     }
 
     @Override
-    public CompletableFuture<Boolean> blockContact(String contactId, String reason) {
+    @Async
+    public CompletableFuture<Boolean> blockContact(String contact_id, String reason) {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
         Optional<User> userOptional = userRepository.findById(userId);
-        Optional<User> contactOptional = userRepository.findById(contactId);
+        Optional<User> contactOptional = userRepository.findById(contact_id);
         if (userOptional.isPresent() && contactOptional.isPresent()) {
             User user = userOptional.get();
             User contact = contactOptional.get();
+            // them vao danh sach chan
             user.getList_block().add(new Block(contact, reason));
-            userRepository.save(user);
+            for (Conservation x : user.getConservations()) {
+                if (x.getUser_2().getId().equals(contact.getId()) || x.getUser_1().getId().equals(contact.getId())) {
+                    x.setStatus(false);
+                    conservationRepository.save(x);
+                    break;
+                }
+            }
+            //Huy ket ban 2 ben
+            unContact(user, contact);
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
     }
 
     @Override
+    @Async
     public CompletableFuture<Boolean> removeContact(String contactId) {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<User> contactOptional = userRepository.findById(contactId);
 
         if (userOptional.isPresent() && contactOptional.isPresent()) {
-            User user = userOptional.get();
-            User contact = contactOptional.get();
-            Contact contactToRemove = null;
-            for (Contact cont : user.getList_contact()) {
-                if (cont.getUser().getId().equals(contact.getId())) {
-                    contactToRemove = cont;
-                    break;
-                }
-            }
-            if (contactToRemove != null) {
-                user.getList_block().remove(contactToRemove);
-                userRepository.save(user);
-            }
+            //Huy ket ban 2 ben
+            unContact(userOptional.get(), contactOptional.get());
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
     }
 
     @Override
+    @Async
     public CompletableFuture<Boolean> removeBlock(String contactId) {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
         Optional<User> userOptional = userRepository.findById(userId);
@@ -129,12 +159,148 @@ public class UserService implements IUserService, UserDetailsService {
                 user.getList_block().remove(blockToRemove);
                 userRepository.save(user);
             }
-
+            // Kiểm tra xem bên kia có chặn không nếu có thì vẫn để status = false nếu 2 bên không chặn nhau thì set lại status
+            blockToRemove = null;
+            for (Block block : contact.getList_block()) {
+                if (block.getUser().getId().equals(user.getId())) {
+                    blockToRemove = block;
+                    break;
+                }
+            }
+            if (blockToRemove != null) {
+                Conservation conservation = user.getConservations().stream()
+                        .filter(x -> x.getUser_1().getId().equals(contact.getId()) || x.getUser_2().getId().equals(contact.getId()))
+                        .findFirst().orElse(null);
+                if (conservation == null)
+                    throw new NotFoundException("Not found Conservation");
+                conservation.setStatus(true);
+                conservationRepository.save(conservation);
+            }
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
     }
 
+    @Override
+    @Async
+    public CompletableFuture<PagedResultDto<Contact>> getListContact(String displayName, long skip, int limit) {
+        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+//        MatchOperation matchOperation = Aggregation.match(
+//                Criteria.where("list_contact.user.displayName").regex(displayName, "i").and("_id").is(userId)
+//        );
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("_id").is(userId)),
+                Aggregation.match(Criteria.where("list_contact.user.displayName").regex(Pattern.compile(displayName, Pattern.CASE_INSENSITIVE))),
+                Aggregation.unwind("list_contact"),
+                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
+                Aggregation.skip(skip),
+                Aggregation.limit(limit),
+                Aggregation.project()
+                        .and("_id").as("id")
+                        .and("list_contact.user").as("user")
+                        .and("list_contact.status").as("status")
+        );
+
+        List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
+        long totalCount = userRepository.findById(userId).get().getList_contact().stream().count();
+        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts));
+    }
+
+    @Override
+    public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(String displayName, long skip, int limit) {
+        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("_id").is(userId)),
+                Aggregation.match(Criteria.where("list_contact.user.status").is(Contact.Status.REQUEST)),
+                Aggregation.match(Criteria.where("list_contact.user.displayName").regex(Pattern.compile(displayName, Pattern.CASE_INSENSITIVE))),
+                Aggregation.unwind("list_contact"),
+                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
+                Aggregation.skip(skip),
+                Aggregation.limit(limit),
+                Aggregation.project()
+                        .and("_id").as("id")
+                        .and("list_contact.user").as("user")
+                        .and("list_contact.status").as("status")
+        );
+
+        List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
+        long totalCount = userRepository.findById(userId).get().getList_contact().stream().filter(x -> x.getStatus() == Contact.Status.REQUEST).count();
+        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts));
+    }
+
+    @Override
+    public CompletableFuture<Boolean> respondToRequestForContacts(String contact_id, Boolean accept) {
+        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        User user = userRepository.findById(userId).orElse(null);
+        User contact = userRepository.findById(contact_id).orElse(null);
+        Contact friend = null;
+        if (user == null || contact == null)
+            throw new NotFoundException("Not found user");
+        if (accept == false) {
+            for (Contact f : user.getList_contact()) {
+                if (f.getUser().getId().equals(contact.getId())) {
+                    friend = f;
+                    break;
+                }
+            }
+            if (friend != null) {
+                user.getList_block().remove(friend);
+                userRepository.save(user);
+            }
+            for (Contact f : contact.getList_contact()) {
+                if (f.getUser().getId().equals(user.getId())) {
+                    friend = f;
+                    break;
+                }
+            }
+            if (friend != null) {
+                contact.getList_block().remove(friend);
+                userRepository.save(contact);
+            }
+            return CompletableFuture.completedFuture(false);
+        } else {
+            Conservation conservation = new Conservation(user, contact, null);
+            conservationRepository.save(conservation);
+            for (Contact f : user.getList_contact()) {
+                if (f.getUser().getId().equals(contact.getId())) {
+                    friend.setStatus(Contact.Status.ACCEPT);
+                    user.getConservations().add(conservation);
+                    userRepository.save(user);
+                    break;
+                }
+            }
+            for (Contact f : contact.getList_contact()) {
+                if (f.getUser().getId().equals(user.getId())) {
+                    friend.setStatus(Contact.Status.ACCEPT);
+                    contact.getConservations().add(conservation);
+                    userRepository.save(contact);
+                    break;
+                }
+            }
+
+            return CompletableFuture.completedFuture(true);
+        }
+    }
+
+    @Override
+    public CompletableFuture<List<Contact>> getListContactRequestSend() {
+        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("_id").is(userId)),
+                Aggregation.match(Criteria.where("list_contact.user.status").is(Contact.Status.WAITING)),
+                Aggregation.unwind("list_contact"),
+                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
+                Aggregation.project()
+                        .and("_id").as("id")
+                        .and("list_contact.user").as("user")
+                        .and("list_contact.status").as("status")
+        );
+        List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
+        return CompletableFuture.completedFuture(contacts);
+    }
+
+    // Basic CRUD
     @Override
     @Async
     public CompletableFuture<UserDto> getOne(String id) {
@@ -179,4 +345,30 @@ public class UserService implements IUserService, UserDetailsService {
             return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), authorities);
         }
     }
+
+    private void unContact(User user, User contact) {
+        Contact contactToRemove = null;
+        for (Contact cont : user.getList_contact()) {
+            if (cont.getUser().getId().equals(contact.getId())) {
+                contactToRemove = cont;
+                break;
+            }
+        }
+        if (contactToRemove != null) {
+            user.getList_contact().remove(contactToRemove);
+            userRepository.save(user);
+        }
+
+        for (Contact cont : contact.getList_contact()) {
+            if (cont.getUser().getId().equals(user.getId())) {
+                contactToRemove = cont;
+                break;
+            }
+        }
+        if (contactToRemove != null) {
+            contact.getList_contact().remove(contactToRemove);
+            userRepository.save(contact);
+        }
+    }
+
 }

@@ -3,6 +3,7 @@ package teleder.core.repositories;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import teleder.core.models.Message.Message;
+import teleder.core.models.User.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,4 +23,5 @@ public interface IMessageRepository extends MongoRepository<Message, String> {
             "{ $project: { _id: 0 } }"
     })
     Optional<Long> countMessagesByCode(String code);
+
 }

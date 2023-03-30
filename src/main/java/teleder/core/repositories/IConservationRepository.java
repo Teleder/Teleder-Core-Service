@@ -5,4 +5,5 @@ import teleder.core.models.Conservation.Conservation;
 
 public interface IConservationRepository extends MongoRepository<Conservation, String> {
 
+
 }
