@@ -13,13 +13,13 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface IFileService extends IMongoService<FileDto, CreateFileDto, UpdateFileDto> {
-    public CompletableFuture<String> uploadFileCloud(MultipartFile file, String code) throws IOException;
+    public CompletableFuture<File> uploadFileCloud(MultipartFile file, String code) throws IOException;
 
-    public CompletableFuture<String> deleteFileCloud(String publicId);
+    public CompletableFuture<Void> deleteFileCloud(String publicId);
 
-    public CompletableFuture<String> uploadFileLocal(MultipartFile file, String code) throws IOException;
+    public CompletableFuture<File> uploadFileLocal(MultipartFile file, String code) throws IOException;
 
-    public CompletableFuture<String> deleteFileLocal(String fileName);
+    public CompletableFuture<Void> deleteFileLocal(String fileName);
 
     CompletableFuture<List<File>> findFileWithPaginationAndSearch(long skip, int limit, String code);
 

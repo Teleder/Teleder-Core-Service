@@ -30,7 +30,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid LoginInputDto loginRequest) throws Exception {
-        final User user = userRepository.findByPhoneAndEmail(loginRequest.getUsername());
+        final User user = userRepository.findByPhoneAndEmail(loginRequest.getUsername()).get(0);
         if (user == null) {
             throw new Exception("Cannot find user with email");
         }
@@ -47,7 +47,7 @@ public class AuthController {
     public ResponseEntity<?> refreshAuthenticationToken(@RequestBody @Valid RefreshTokenInput refreshTokenRequest) throws Exception {
         final String refreshToken = refreshTokenRequest.getRefreshToken();
         // Check if the refresh token is valid and not expired
-        final User userDetails = userRepository.findByPhoneAndEmail(jwtUtil.getUsernameFromToken(refreshToken));
+        final User userDetails = userRepository.findByPhoneAndEmail(jwtUtil.getUsernameFromToken(refreshToken)).get(0);
         if (jwtUtil.validateToken(refreshToken, userDetails)) {
             final String accessToken = jwtUtil.generateAccessToken(userDetails);
             return ResponseEntity.ok(new RefreshTokenDto(accessToken, refreshToken));

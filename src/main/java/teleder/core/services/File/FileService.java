@@ -77,7 +77,7 @@ public class FileService implements IFileService {
 
 
     @Override
-    public CompletableFuture<String> uploadFileCloud(MultipartFile file, String code) throws IOException {
+    public CompletableFuture<File> uploadFileCloud(MultipartFile file, String code) throws IOException {
         boolean isImage = file.getContentType().startsWith("image/");
         if (isImage) {
             byte[] fileData = file.getBytes();
@@ -97,31 +97,29 @@ public class FileService implements IFileService {
             Map<String, Object> uploadResult = cloudinary.uploader().upload(fileData, ObjectUtils.emptyMap());
             String fileUrl = (String) uploadResult.get("url");
             String[] name = fileUrl.split("/");
-            fileRepository.insert(new File(name[name.length-1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code));
-            return CompletableFuture.completedFuture(fileUrl);
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length-1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
         } else {
             Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
             String fileUrl = (String) uploadResult.get("url");
             String[] name = fileUrl.split("/");
-            fileRepository.insert(new File(name[name.length-1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code));
-            return CompletableFuture.completedFuture(fileUrl);
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length-1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
         }
     }
 
     @Override
-    public CompletableFuture<String> deleteFileCloud(String publicId) {
+    public CompletableFuture<Void> deleteFileCloud(String publicId) {
         try {
             if (publicId == null || publicId.trim() == "")
                 throw new NotFoundException("Not found publicId");
             cloudinary.api().deleteResources(Arrays.asList(publicId), ObjectUtils.emptyMap());
-            return CompletableFuture.completedFuture("success");
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public CompletableFuture<String> uploadFileLocal(MultipartFile file, String code) throws IOException {
+    public CompletableFuture<File> uploadFileLocal(MultipartFile file, String code) throws IOException {
         Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
         String fileName = System.currentTimeMillis() + "-" + UUID.randomUUID() + "." + FilenameUtils.getExtension(file.getOriginalFilename());
         boolean isImage = file.getContentType().startsWith("image/");
@@ -145,24 +143,22 @@ public class FileService implements IFileService {
             }
             Files.write(path, fileData);
             String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : request.getRemoteAddr()) + ":" + request.getLocalPort() + "/uploads/" + fileName;
-            fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code));
-            return CompletableFuture.completedFuture(url);
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code)));
         } else {
             Files.write(path, file.getBytes());
             String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : request.getRemoteAddr()) + ":" + request.getLocalPort() + "/uploads/" + fileName;
-            fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code));
-            return CompletableFuture.completedFuture(url);
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code)));
         }
     }
 
     @Override
-    public CompletableFuture<String> deleteFileLocal(String fileName) {
+    public CompletableFuture<Void> deleteFileLocal(String fileName) {
         try {
             if (fileName == null || fileName.trim() == "")
                 throw new NotFoundException("Not found file name");
             java.io.File file = new java.io.File(System.getProperty("user.dir"), "uploads/" + fileName);
             if (file.delete()) {
-                return CompletableFuture.completedFuture("success");
+                return CompletableFuture.completedFuture(null);
             } else {
                 throw new RuntimeException("Some thing went wrong!");
             }

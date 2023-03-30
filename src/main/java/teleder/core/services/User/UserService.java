@@ -48,7 +48,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Async
     public CompletableFuture<UserProfileDto> getProfile(HttpServletRequest request) {
-        User user = userRepository.findByPhoneAndEmail(((User) request.getAttribute("user")).getEmail());
+        User user = userRepository.findByPhoneAndEmail(((User) request.getAttribute("user")).getEmail()).get(0);
         return CompletableFuture.completedFuture(toDto.map(user, UserProfileDto.class));
     }
 
@@ -170,8 +170,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String input) throws UsernameNotFoundException {
-        User user = userRepository.findByPhoneAndEmail(input);
-
+        User user = userRepository.findByPhoneAndEmail(input).get(0);
         if (user == null) {
             throw new UsernameNotFoundException("User not found with email or phone: " + input);
         } else {

@@ -2,6 +2,8 @@ package teleder.core.config;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import io.github.resilience4j.ratelimiter.RateLimiterConfig;
+import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,12 +13,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.method.HandlerTypePredicate;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.*;
 import teleder.core.middleware.GlobalApiLoggerInterceptor;
+import teleder.core.middleware.RateLimiterInterceptor;
 
+import java.time.Duration;
 import java.util.concurrent.Executor;
 
 @Configuration
@@ -36,6 +37,7 @@ public class AppConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(globalApiLoggerInterceptor);
+        registry.addInterceptor(rateLimiterInterceptor(rateLimiterRegistry()));
     }
 
     @Override
@@ -79,5 +81,26 @@ public class AppConfig implements WebMvcConfigurer {
                 "api_secret", apiSecret
         ));
     }
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH")
+                .allowedHeaders("*");
+    }
 
+    @Bean
+    public RateLimiterRegistry rateLimiterRegistry() {
+        RateLimiterConfig config = RateLimiterConfig.custom()
+                .limitForPeriod(1000)
+                .limitRefreshPeriod(Duration.ofHours(1))
+                .timeoutDuration(Duration.ofMillis(25))
+                .build();
+        return RateLimiterRegistry.of(config);
+    }
+
+    @Bean
+    public RateLimiterInterceptor rateLimiterInterceptor(RateLimiterRegistry rateLimiterRegistry) {
+        return new RateLimiterInterceptor(rateLimiterRegistry);
+    }
 }

@@ -2,10 +2,8 @@ package teleder.core.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import teleder.core.config.ApiPrefixController;
 import teleder.core.config.Authenticate;
 import teleder.core.dtos.PagedResultDto;
@@ -13,6 +11,7 @@ import teleder.core.dtos.Pagination;
 import teleder.core.models.File.File;
 import teleder.core.services.File.IFileService;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -23,6 +22,32 @@ public class FileController {
     @Autowired
     IFileService fileService;
 
+    @Async
+    @Authenticate
+    @PostMapping(value = "/cloud/upload", consumes = "multipart/form-data")
+    public CompletableFuture<File> uploadFileCloud(@RequestPart("file") MultipartFile file, @RequestParam(name = "code") String code) throws IOException {
+        return fileService.uploadFileCloud(file, code);
+    }
+    @Async
+    @Authenticate
+    @DeleteMapping("/cloud/{publicId}")
+    public CompletableFuture<Void> deleteFileCloud(@PathVariable String fileName) {
+        return  fileService.deleteFileLocal(fileName);
+    }
+
+    @Async
+    @Authenticate
+    @PostMapping(value = "/local/upload", consumes = "multipart/form-data")
+    public CompletableFuture<File> uploadFileLocal(@RequestPart("file") MultipartFile file, @RequestParam(name = "code") String code) throws IOException {
+        return fileService.uploadFileLocal(file, code);
+    }
+
+    @Async
+    @Authenticate
+    @DeleteMapping("/cloud/{fileName}")
+    public CompletableFuture<Void> deleteFileLocal(@PathVariable  String fileName) {
+        return  fileService.deleteFileLocal(fileName);
+    }
     @Async
     @Authenticate
     @GetMapping("/{code}")
