@@ -4,11 +4,12 @@ import com.google.zxing.WriterException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.*;
-import teleder.core.config.ApiPrefixController;
-import teleder.core.config.Authenticate;
-import teleder.core.config.RequiresAuthorization;
-import teleder.core.dtos.BlockContactDto;
+import teleder.core.annotations.ApiPrefixController;
+import teleder.core.annotations.Authenticate;
+import teleder.core.annotations.RequiresAuthorization;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
@@ -125,4 +126,6 @@ public class UserController {
     public CompletableFuture<List<Contact>> getListContactRequestSend() {
         return userService.getListContactRequestSend();
     }
+
+
 }

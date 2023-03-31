@@ -1,4 +1,4 @@
-package teleder.core.config;
+package teleder.core.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

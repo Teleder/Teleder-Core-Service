@@ -1,4 +1,4 @@
-package teleder.core.config;
+package teleder.core.annotations;
 
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

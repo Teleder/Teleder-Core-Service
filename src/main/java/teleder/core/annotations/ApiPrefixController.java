@@ -1,4 +1,4 @@
-package teleder.core.config;
+package teleder.core.annotations;
 
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.web.bind.annotation.RequestMapping;

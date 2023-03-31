@@ -53,8 +53,8 @@ jwt:
         dn/RsYEONbwQSjIfMPkvxF+8HQ==
         -----END PRIVATE KEY-----
 apiVersion: '"1.0.0"'
-apiTitle: '"Teleder Core Service"'
-apiContactEmail: '"teledergmail.com"'
-apiDescription: '"This is first version api for Teleder Core."'
-apiContactUrl: '"NotFound"'
-apiContactName: '"Teleder Admin'
+apiTitle: 'Teleder Core Service'
+apiContactEmail: 'teledergmail.com'
+apiDescription: 'This is first version api for Teleder Core.'
+apiContactUrl: 'NotFound'
+apiContactName: 'Teleder Admin'

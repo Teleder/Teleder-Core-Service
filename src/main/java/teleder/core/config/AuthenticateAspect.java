@@ -25,7 +25,7 @@ public class AuthenticateAspect {
     @Autowired
     private UserService userDetailsService;
 
-    @Before("@annotation(teleder.core.config.Authenticate)")
+    @Before("@annotation(teleder.core.annotations.Authenticate)")
     public void authenticate(JoinPoint joinPoint) throws UnauthorizedException, NoSuchAlgorithmException, InvalidKeySpecException {
         String token = getTokenFromRequest();
         if (token == null) {

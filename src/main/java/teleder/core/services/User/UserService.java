@@ -37,10 +37,7 @@ import teleder.core.services.User.dtos.UserProfileDto;
 import teleder.core.utils.QRCodeGenerator;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
@@ -51,7 +48,6 @@ public class UserService implements IUserService, UserDetailsService {
     IUserRepository userRepository;
     @Autowired
     IFileService fileService;
-
     @Autowired
     private MongoTemplate mongoTemplate;
     @Autowired
@@ -109,7 +105,7 @@ public class UserService implements IUserService, UserDetailsService {
             // them vao danh sach chan
             user.getList_block().add(new Block(contact, reason));
             for (Conservation x : user.getConservations()) {
-                if (x.getUser_2().getId().equals(contact.getId()) || x.getUser_1().getId().equals(contact.getId())) {
+                if (x.getUser_2().getId().contains(contact.getId()) || x.getUser_1().getId().contains(contact.getId())) {
                     x.setStatus(false);
                     conservationRepository.save(x);
                     break;
@@ -150,7 +146,7 @@ public class UserService implements IUserService, UserDetailsService {
 
             Block blockToRemove = null;
             for (Block block : user.getList_block()) {
-                if (block.getUser().getId().equals(contact.getId())) {
+                if (block.getUser().getId().contains(contact.getId())) {
                     blockToRemove = block;
                     break;
                 }
@@ -162,14 +158,14 @@ public class UserService implements IUserService, UserDetailsService {
             // Kiểm tra xem bên kia có chặn không nếu có thì vẫn để status = false nếu 2 bên không chặn nhau thì set lại status
             blockToRemove = null;
             for (Block block : contact.getList_block()) {
-                if (block.getUser().getId().equals(user.getId())) {
+                if (block.getUser().getId().contains(user.getId())) {
                     blockToRemove = block;
                     break;
                 }
             }
             if (blockToRemove != null) {
                 Conservation conservation = user.getConservations().stream()
-                        .filter(x -> x.getUser_1().getId().equals(contact.getId()) || x.getUser_2().getId().equals(contact.getId()))
+                        .filter(x -> x.getUser_1().getId().contains(contact.getId()) || x.getUser_2().getId().contains(contact.getId()))
                         .findFirst().orElse(null);
                 if (conservation == null)
                     throw new NotFoundException("Not found Conservation");
@@ -212,7 +208,7 @@ public class UserService implements IUserService, UserDetailsService {
 
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(userId)),
-                Aggregation.match(Criteria.where("list_contact.user.status").is(Contact.Status.REQUEST)),
+                Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.REQUEST)),
                 Aggregation.match(Criteria.where("list_contact.user.displayName").regex(Pattern.compile(displayName, Pattern.CASE_INSENSITIVE))),
                 Aggregation.unwind("list_contact"),
                 Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
@@ -239,7 +235,7 @@ public class UserService implements IUserService, UserDetailsService {
             throw new NotFoundException("Not found user");
         if (accept == false) {
             for (Contact f : user.getList_contact()) {
-                if (f.getUser().getId().equals(contact.getId())) {
+                if (f.getUser().getId().contains(contact.getId())) {
                     friend = f;
                     break;
                 }
@@ -249,7 +245,7 @@ public class UserService implements IUserService, UserDetailsService {
                 userRepository.save(user);
             }
             for (Contact f : contact.getList_contact()) {
-                if (f.getUser().getId().equals(user.getId())) {
+                if (f.getUser().getId().contains(user.getId())) {
                     friend = f;
                     break;
                 }
@@ -261,9 +257,10 @@ public class UserService implements IUserService, UserDetailsService {
             return CompletableFuture.completedFuture(false);
         } else {
             Conservation conservation = new Conservation(user, contact, null);
+            conservation.setCode(UUID.randomUUID().toString());
             conservationRepository.save(conservation);
             for (Contact f : user.getList_contact()) {
-                if (f.getUser().getId().equals(contact.getId())) {
+                if (f.getUser().getId().contains(contact.getId())) {
                     friend.setStatus(Contact.Status.ACCEPT);
                     user.getConservations().add(conservation);
                     userRepository.save(user);
@@ -271,7 +268,7 @@ public class UserService implements IUserService, UserDetailsService {
                 }
             }
             for (Contact f : contact.getList_contact()) {
-                if (f.getUser().getId().equals(user.getId())) {
+                if (f.getUser().getId().contains(user.getId())) {
                     friend.setStatus(Contact.Status.ACCEPT);
                     contact.getConservations().add(conservation);
                     userRepository.save(contact);
@@ -288,7 +285,7 @@ public class UserService implements IUserService, UserDetailsService {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(userId)),
-                Aggregation.match(Criteria.where("list_contact.user.status").is(Contact.Status.WAITING)),
+                Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.WAITING)),
                 Aggregation.unwind("list_contact"),
                 Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
                 Aggregation.project()
@@ -349,7 +346,7 @@ public class UserService implements IUserService, UserDetailsService {
     private void unContact(User user, User contact) {
         Contact contactToRemove = null;
         for (Contact cont : user.getList_contact()) {
-            if (cont.getUser().getId().equals(contact.getId())) {
+            if (cont.getUser().getId().contains(contact.getId())) {
                 contactToRemove = cont;
                 break;
             }
@@ -360,7 +357,7 @@ public class UserService implements IUserService, UserDetailsService {
         }
 
         for (Contact cont : contact.getList_contact()) {
-            if (cont.getUser().getId().equals(user.getId())) {
+            if (cont.getUser().getId().contains(user.getId())) {
                 contactToRemove = cont;
                 break;
             }

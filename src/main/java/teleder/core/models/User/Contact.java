@@ -8,13 +8,15 @@ public class Contact {
     @DBRef
     User user;
     Status status;
+
+    public Contact(User user, Status status) {
+        this.user = user;
+        this.status = status;
+    }
+
     public enum Status {
         ACCEPT,
         WAITING,
         REQUEST
-    }
-    public Contact(User user, Status status) {
-        this.user = user;
-        this.status = status;
     }
 }

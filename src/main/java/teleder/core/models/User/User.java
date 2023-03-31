@@ -1,23 +1,21 @@
 package teleder.core.models.User;
 
 import lombok.Data;
-import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import teleder.core.models.BaseModel;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.File.File;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
 @Document(collection = "User")
 @Data
-public class User implements UserDetails {
+public class User extends BaseModel implements UserDetails {
     @Id
     private String id;
     private String firstName;
@@ -35,11 +33,7 @@ public class User implements UserDetails {
     private Role role = Role.USER;
     //    List <Message> list_
     private List<Contact> list_contact;
-    @CreatedBy
-    private Date createAt = new Date();
-    @LastModifiedDate
-    private Date updateAt = new Date();
-    boolean isDeleted = false;
+    boolean isActive = false;
 
     public User() {
         this.firstName = "12";

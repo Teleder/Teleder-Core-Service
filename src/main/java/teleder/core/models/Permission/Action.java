@@ -4,5 +4,6 @@ public enum Action {
     ALL,
     ACCEPT,
     BLOCK,
+    DELETE,
     ADD
 }

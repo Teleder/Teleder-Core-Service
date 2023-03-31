@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import teleder.core.config.ApiPrefixController;
+import teleder.core.annotations.ApiPrefixController;
 import teleder.core.config.JwtTokenUtil;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IUserRepository;

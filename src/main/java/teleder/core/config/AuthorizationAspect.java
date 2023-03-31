@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import teleder.core.annotations.RequiresAuthorization;
 import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.ForbiddenException;
 

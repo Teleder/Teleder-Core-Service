@@ -1,38 +1,39 @@
 package teleder.core.models.Group;
 
 import lombok.Data;
-import org.springframework.data.annotation.CreatedBy;
+import lombok.NonNull;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import teleder.core.models.BaseModel;
 import teleder.core.models.File.File;
 import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Document(collection = "Group")
 @Data
-public class Group {
-    List<Member> member = new ArrayList<>();
+public class Group extends BaseModel {
+    @NonNull
+    String name;
+    @NonNull
+    String bio;
+    String QR;
+    Set<Role> roles = new HashSet<>();
+    Set<Member> members = new HashSet<>();
     boolean isPublic;
-    List<Block> block_list = new ArrayList<>();
-    boolean isDeleted = false;
+    Set<Block> block_list = new HashSet<>();
     @Id
     private String id;
-    private String code;
+    private String code = UUID.randomUUID().toString();
     @DBRef
     private List<Message> pinMessage;
     @DBRef
     private User user_own;
     @DBRef
     private File avatarGroup;
-    @CreatedBy
-    private Date createAt = new Date();
-    @LastModifiedDate
-    private Date updateAt = new Date();
-
 }
