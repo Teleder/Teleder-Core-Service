@@ -1,7 +1,6 @@
 package teleder.core.services.Group;
 
 import org.bson.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -13,6 +12,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import teleder.core.dtos.ContactInfoDto;
+import teleder.core.dtos.SocketPayload;
 import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.exceptions.UnauthorizedException;
@@ -21,16 +22,15 @@ import teleder.core.models.Group.Block;
 import teleder.core.models.Group.Group;
 import teleder.core.models.Group.Member;
 import teleder.core.models.Group.Role;
+import teleder.core.models.Message.Message;
 import teleder.core.models.Permission.Action;
 import teleder.core.models.Permission.Permission;
 import teleder.core.models.User.User;
-import teleder.core.repositories.IConservationRepository;
-import teleder.core.repositories.IGroupRepository;
-import teleder.core.repositories.IPermissionRepository;
-import teleder.core.repositories.IUserRepository;
+import teleder.core.repositories.*;
 import teleder.core.services.Group.dtos.CreateGroupDto;
 import teleder.core.services.Group.dtos.GroupDto;
 import teleder.core.services.Group.dtos.UpdateGroupDto;
+import teleder.core.utils.CONSTS;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -44,24 +44,21 @@ import static teleder.core.models.Group.Member.Status.WAITING;
 
 @Service
 public class GroupService implements IGroupService {
-    final
-    SimpMessagingTemplate simpMessagingTemplate;
-    final
-    IGroupRepository groupRepository;
-    final
-    IUserRepository userRepository;
-    final
-    IConservationRepository conservationRepository;
-    final
-    IPermissionRepository permissionRepository;
-    private final MongoTemplate mongoTemplate;
+    final SimpMessagingTemplate simpMessagingTemplate;
+    final IGroupRepository groupRepository;
+    final IUserRepository userRepository;
+    final IConservationRepository conservationRepository;
+    final IPermissionRepository permissionRepository;
+    final IMessageRepository messageRepository;
+    final MongoTemplate mongoTemplate;
 
-    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, MongoTemplate mongoTemplate) {
+    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, IMessageRepository messageRepository, MongoTemplate mongoTemplate) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
         this.conservationRepository = conservationRepository;
         this.permissionRepository = permissionRepository;
+        this.messageRepository = messageRepository;
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -79,34 +76,45 @@ public class GroupService implements IGroupService {
     @Async
     public CompletableFuture<Group> addMemberToGroup(String groupId, String memberId) {
         String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
-        User user = userRepository.findById(userId).orElse(null);
+        User user = null;
         User member = userRepository.findById(memberId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
-        if (user == null || member == null)
+        if (member == null)
             throw new NotFoundException("Not found user");
         if (group == null)
             throw new NotFoundException("Not found group");
-        // check user exist
-        Member memberFilter = group.getMembers().stream()
-                .filter(x -> x.getUserId().contains(userId))
-                .findFirst().orElse(null);
-        if (memberFilter == null)
-            throw new UnauthorizedException("You do not have permission to do that");
-        // check block
-        Block blockFilter = group.getBlock_list().stream()
-                .filter(x -> x.getUser_id().contains(memberId))
-                .findFirst().orElse(null);
-        if (blockFilter != null)
-            throw new BadRequestException("User has been block with reason: " + blockFilter.getReason() + " ,Please unlock if you are admin or has permission to unlock before add new member");
-
-        if (group.isPublic() || user.getId().contains(group.getUser_own().getId())) {
-            group.getMembers().add(new Member(memberId, user, Member.Status.ACCEPT));
-            // add conservation to user
-            member.getConservations().add(new Conservation(group, group.getCode()));
-            userRepository.save(member);
+        if (userId != null) {
+            user = userRepository.findById(userId).orElse(null);
+            // check user exist
+            Member memberFilter = group.getMembers().stream()
+                    .filter(x -> x.getUserId().contains(userId))
+                    .findFirst().orElse(null);
+            if (memberFilter == null)
+                throw new UnauthorizedException("You do not have permission to do that");
+            // check block
+            Block blockFilter = group.getBlock_list().stream()
+                    .filter(x -> x.getUser_id().contains(memberId))
+                    .findFirst().orElse(null);
+            if (blockFilter != null)
+                throw new BadRequestException("User has been block with reason: " + blockFilter.getReason() + " ,Please unlock if you are admin or member has permission to unlock before add new member");
+            if (group.isPublic() || user.getId().contains(group.getUser_own().getId())) {
+                group.getMembers().add(new Member(memberId, user, Member.Status.ACCEPT));
+                member.getConservations().add(new Conservation(group, group.getCode()));
+                // add conservation to user
+                Message mess = new Message(user.getDisplayName() + " added " + member.getDisplayName() + " to group", group.getCode(), CONSTS.ADD_MEMBER_TO_GROUP);
+                mess = messageRepository.save(mess);
+                simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.ADD_MEMBER_TO_GROUP));
+                userRepository.save(member);
+            } else {
+                group.getMembers().add(new Member(memberId, user, WAITING));
+                simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(new ContactInfoDto(member), CONSTS.REQUEST_MEMBER_TO_GROUP));
+            }
         } else {
+            // neu member tu request
             group.getMembers().add(new Member(memberId, user, WAITING));
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(new ContactInfoDto(member), CONSTS.REQUEST_MEMBER_TO_GROUP));
         }
+
         return CompletableFuture.completedFuture(groupRepository.save(group));
     }
 
@@ -137,6 +145,10 @@ public class GroupService implements IGroupService {
             leaveGroupFunc(group, member);
             userRepository.save(member);
             groupRepository.save(group);
+            Message mess = new Message(member.getDisplayName() + " blocked by " + user.getDisplayName(), group.getCode(), CONSTS.BLOCK_MEMBER_GROUP);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.BLOCK_MEMBER_GROUP));
+
             return null;
         } else {
             throw new UnauthorizedException("You do not have permission to do that");
@@ -173,6 +185,9 @@ public class GroupService implements IGroupService {
             }
             group.getBlock_list().remove(blockFilter);
             groupRepository.save(group);
+            Message mess = new Message(user.getDisplayName() + "remove block for " + member.getDisplayName(), group.getCode(), CONSTS.REMOVE_BLOCK_MEMBER_GROUP);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.REMOVE_BLOCK_MEMBER_GROUP));
             return null;
         } else {
             throw new UnauthorizedException("You do not have permission to do that");
@@ -220,6 +235,9 @@ public class GroupService implements IGroupService {
             user.getConservations().remove(conservation);
             userRepository.save(member);
             groupRepository.save(group);
+            Message mess = new Message(member.getDisplayName() + " has been remove by " + user.getDisplayName(), group.getCode(), CONSTS.REMOVE_MEMBER);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.REMOVE_MEMBER));
             return null;
         } else {
             throw new UnauthorizedException("You do not have permission to do that");
@@ -240,22 +258,41 @@ public class GroupService implements IGroupService {
         // check permission
         if (group.getUser_own().getId().contains(userId)) {
             // get role user
-            Role roleFilter = null;
-            for (Role role : group.getRoles()) {
-                if (role.getName().contains(roleName)) {
-                    roleFilter = role;
-                    break;
+            // neu role la member thi la go role
+            if (roleName.equals("member")){
+                for (Member mem : group.getMembers()) {
+                    if (mem.getUserId().contains(memberId)) {
+                        mem.setRole(null);
+                        break;
+                    }
                 }
+                Message mess = new Message(member.getDisplayName() + " has removed role", group.getCode(), CONSTS.DECENTRALIZATION);
+                mess = messageRepository.save(mess);
+                simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.DECENTRALIZATION));
             }
-            // set lai role user
-            Member mem1 = null;
-            for (Member mem : group.getMembers()) {
-                if (mem.getUserId().contains(memberId)) {
-                    mem.setRole(roleFilter);
-                    break;
+            else{
+                // cap role moi
+                Role roleFilter = null;
+                for (Role role : group.getRoles()) {
+                    if (role.getName().contains(roleName)) {
+                        roleFilter = role;
+                        break;
+                    }
                 }
+                // set lai role user
+                for (Member mem : group.getMembers()) {
+                    if (mem.getUserId().contains(memberId)) {
+                        mem.setRole(roleFilter);
+                        break;
+                    }
+                }
+                Message mess = new Message(member.getDisplayName() + " is " + roleName, group.getCode(), CONSTS.DECENTRALIZATION);
+                mess = messageRepository.save(mess);
+                simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.DECENTRALIZATION));
             }
+
             groupRepository.save(group);
+
             return null;
         } else {
             throw new UnauthorizedException("You do not have permission to do that");
@@ -310,6 +347,9 @@ public class GroupService implements IGroupService {
             user.getConservations().add(conservation);
             userRepository.save(user);
             groupRepository.save(group);
+            Message mess = new Message(user.getDisplayName() + "has join group", group.getCode(), CONSTS.ACCEPT_MEMBER_JOIN);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.ACCEPT_MEMBER_JOIN));
             return null;
         } else {
             Group group = groupRepository.findById(groupId).orElse(null);
@@ -327,6 +367,7 @@ public class GroupService implements IGroupService {
                 group.getMembers().remove(memberFilter);
                 groupRepository.save(group);
             }
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(new ContactInfoDto( memberFilter.getUser()), CONSTS.DENY_MEMBER_JOIN));
             return null;
         }
     }
@@ -369,7 +410,7 @@ public class GroupService implements IGroupService {
 
     @Override
     @Async
-    public CompletableFuture<Integer> countMermberGroup(String groupId, String search) {
+    public CompletableFuture<Integer> countMemberGroup(String groupId, String search) {
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(groupId)),
                 Aggregation.unwind("members"),
@@ -401,7 +442,7 @@ public class GroupService implements IGroupService {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user");
-        return CompletableFuture.completedFuture(conservationRepository.getMyGroups(user,search, skip, limit));
+        return CompletableFuture.completedFuture(conservationRepository.getMyGroups(user, search, skip, limit));
     }
 
     @Override
@@ -422,6 +463,9 @@ public class GroupService implements IGroupService {
             leaveGroupFunc(group, user);
             userRepository.save(user);
             groupRepository.save(group);
+            Message mess = new Message(user.getDisplayName() + " has leave group", group.getCode(), CONSTS.LEAVE_GROUP);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.LEAVE_GROUP));
             return null;
         } else {
             throw new UnauthorizedException("You do not have permission to do that");
@@ -447,6 +491,9 @@ public class GroupService implements IGroupService {
             Role newRole = new Role(roleName, pers);
             group.getRoles().add(newRole);
             groupRepository.save(group);
+            Message mess = new Message(user.getDisplayName() + " has added new role: " + roleName, group.getCode(), CONSTS.CREATE_ROLE);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.CREATE_ROLE));
             return null;
         } else {
             throw new UnauthorizedException("You do not have permission to do that");
@@ -475,6 +522,9 @@ public class GroupService implements IGroupService {
             }
             group.getRoles().remove(roleFilter);
             groupRepository.save(group);
+            Message mess = new Message(roleName + " has remove!"  , group.getCode(), CONSTS.DELETE_ROLE);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.DELETE_ROLE));
             return null;
         } else {
             throw new UnauthorizedException("You do not have permission to do that");

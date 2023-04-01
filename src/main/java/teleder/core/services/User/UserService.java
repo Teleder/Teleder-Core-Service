@@ -4,7 +4,6 @@ import com.google.zxing.WriterException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -20,24 +19,31 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import teleder.core.config.JwtTokenUtil;
+import teleder.core.dtos.ContactInfoDto;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.dtos.Pagination;
+import teleder.core.dtos.SocketPayload;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.File.File;
+import teleder.core.models.Message.Message;
 import teleder.core.models.User.Block;
 import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
+import teleder.core.repositories.IMessageRepository;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.File.IFileService;
 import teleder.core.services.User.dtos.CreateUserDto;
 import teleder.core.services.User.dtos.UpdateUserDto;
 import teleder.core.services.User.dtos.UserDto;
 import teleder.core.services.User.dtos.UserProfileDto;
+import teleder.core.utils.CONSTS;
 import teleder.core.utils.QRCodeGenerator;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -45,12 +51,10 @@ import java.util.regex.Pattern;
 
 @Service
 public class UserService implements IUserService, UserDetailsService {
-    final
-    SimpMessagingTemplate simpMessagingTemplate;
-    final
-    IUserRepository userRepository;
-    final
-    IFileService fileService;
+    final SimpMessagingTemplate simpMessagingTemplate;
+    final IUserRepository userRepository;
+    final IFileService fileService;
+    final IMessageRepository messageRepository;
     private final MongoTemplate mongoTemplate;
     final
     IConservationRepository conservationRepository;
@@ -58,10 +62,11 @@ public class UserService implements IUserService, UserDetailsService {
     private final int width = 300;
     private final int height = 300;
 
-    public UserService(SimpMessagingTemplate simpMessagingTemplate, IUserRepository userRepository, IFileService fileService, MongoTemplate mongoTemplate, IConservationRepository conservationRepository, ModelMapper toDto) {
+    public UserService(SimpMessagingTemplate simpMessagingTemplate, IUserRepository userRepository, IFileService fileService, IMessageRepository messageRepository, MongoTemplate mongoTemplate, IConservationRepository conservationRepository, ModelMapper toDto) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.userRepository = userRepository;
         this.fileService = fileService;
+        this.messageRepository = messageRepository;
         this.mongoTemplate = mongoTemplate;
         this.conservationRepository = conservationRepository;
         this.toDto = toDto;
@@ -98,6 +103,7 @@ public class UserService implements IUserService, UserDetailsService {
             contact.getList_contact().add(new Contact(contact, Contact.Status.REQUEST));
             userRepository.save(user);
             userRepository.save(contact);
+            simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.MESSAGE_GROUP));
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
@@ -123,6 +129,7 @@ public class UserService implements IUserService, UserDetailsService {
             }
             //Huy ket ban 2 ben
             unContact(user, contact);
+            simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.BLOCK_CONTACT));
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
@@ -138,6 +145,7 @@ public class UserService implements IUserService, UserDetailsService {
         if (userOptional.isPresent() && contactOptional.isPresent()) {
             //Huy ket ban 2 ben
             unContact(userOptional.get(), contactOptional.get());
+            simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contactOptional.get()), CONSTS.REMOVE_CONTACT));
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
@@ -182,6 +190,7 @@ public class UserService implements IUserService, UserDetailsService {
                 conservation.setStatus(true);
                 conservationRepository.save(conservation);
             }
+            simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.REMOVE_BLOCK_CONTACT));
             return CompletableFuture.completedFuture(true);
         }
         throw new NotFoundException("Not Found Contact!");
@@ -264,6 +273,7 @@ public class UserService implements IUserService, UserDetailsService {
                 contact.getList_block().remove(friend);
                 userRepository.save(contact);
             }
+            simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.DENY_CONTACT));
             return CompletableFuture.completedFuture(false);
         } else {
             Conservation conservation = new Conservation(user, contact, null);
@@ -285,7 +295,11 @@ public class UserService implements IUserService, UserDetailsService {
                     break;
                 }
             }
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+            Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
+            mess = messageRepository.save(mess);
+            simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.ACCEPT_CONTACT));
             return CompletableFuture.completedFuture(true);
         }
     }

@@ -25,6 +25,6 @@ public interface IGroupService extends IMongoService<GroupDto, CreateGroupDto, U
     public CompletableFuture<Void> leaveGroup(String groupId);
     CompletableFuture<Group> createRoleForGroup(String groupId,  String roleName, List<Action> permissions);
     public CompletableFuture<Void> deleteRoleForGroup(String groupId, String roleName);
-    public CompletableFuture<Integer> countMermberGroup(String groupId, String search);
+    public CompletableFuture<Integer> countMemberGroup(String groupId, String search);
     public CompletableFuture<Long> countMyGroup();
 }

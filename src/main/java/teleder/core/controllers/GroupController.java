@@ -72,7 +72,7 @@ public class GroupController {
     @Authenticate
     @GetMapping("/{id}/members-paginate")
     public PagedResultDto<Member> getMembersPaginate(@PathVariable String groupId, @RequestParam String search, @RequestParam long page, @RequestParam int size) {
-        CompletableFuture<Integer> total = groupService.countMermberGroup(groupId, search);
+        CompletableFuture<Integer> total = groupService.countMemberGroup(groupId, search);
         CompletableFuture<List<Member>> members = groupService.getMembersPaginate(groupId, search, page * size, size);
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, members);
         try {

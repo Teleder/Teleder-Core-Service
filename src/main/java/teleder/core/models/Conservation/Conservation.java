@@ -10,6 +10,7 @@ import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 
 import java.util.List;
+import java.util.UUID;
 
 @Document(collection = "Conservation")
 @Data
@@ -17,7 +18,7 @@ public class Conservation extends BaseModel {
     boolean status = true;
     @Id
     private String id;
-    private String code;
+    private String code = UUID.randomUUID().toString();
     private Type type = Type.PERSONAL;
     private List<PinMessage> pinMessage;
     @DBRef
