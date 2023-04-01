@@ -4,7 +4,6 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -102,12 +101,12 @@ public class FileService implements IFileService {
             Map<String, Object> uploadResult = cloudinary.uploader().upload(fileData, ObjectUtils.emptyMap());
             String fileUrl = (String) uploadResult.get("url");
             String[] name = fileUrl.split("/");
-            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length-1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length - 1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
         } else {
             Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
             String fileUrl = (String) uploadResult.get("url");
             String[] name = fileUrl.split("/");
-            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length-1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length - 1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
         }
     }
 
@@ -125,7 +124,7 @@ public class FileService implements IFileService {
 
     @Override
     public CompletableFuture<File> uploadFileLocal(MultipartFile file, String code) throws IOException {
-        Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
+        Path uploadPath = Paths.get("./uploads");
         String fileName = System.currentTimeMillis() + "-" + UUID.randomUUID() + "." + FilenameUtils.getExtension(file.getOriginalFilename());
         boolean isImage = file.getContentType().startsWith("image/");
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
@@ -161,7 +160,7 @@ public class FileService implements IFileService {
         try {
             if (fileName == null || fileName.trim() == "")
                 throw new NotFoundException("Not found file name");
-            java.io.File file = new java.io.File(System.getProperty("user.dir"), "uploads/" + fileName);
+            java.io.File file = new java.io.File("./uploads" + fileName);
             if (file.delete()) {
                 return CompletableFuture.completedFuture(null);
             } else {

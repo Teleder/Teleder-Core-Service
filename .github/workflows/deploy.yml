@@ -69,5 +69,4 @@ jobs:
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
           scp -i private_key.pem -P $PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar $USER@$HOST:$TARGET
-          ssh -i private_key.pem -P $PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $USER@$HOST "systemctl restart my-spring-boot-app.service"
           rm -f private_key.pem
