@@ -32,8 +32,8 @@ jobs:
       - name: Deploy to server
         env:
           PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          HOST: ${{ secrets.HOST }}
-          USER: ${{ secrets.USER }}
+          HOST: ${{ secrets.REMOTE_PORT }}
+          USER: ${{ secrets.REMOTE_USER }}
           TARGET_DIR: /home/debian/teleder-core
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
