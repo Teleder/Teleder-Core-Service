@@ -1,9 +1,9 @@
-name: Auto Deploy
+name: Deploy Spring Boot App
 
 on:
   push:
     branches:
-      - main
+      - main # Replace with your default branch if different
 
 jobs:
   build-and-deploy:
@@ -13,18 +13,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
           java-version: '17'
-          distribution: 'adopt'
+          distribution: 'temurin'
 
-      - name: Cache Maven packages
+      - name: Cache Maven dependencies
         uses: actions/cache@v2
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
 
       - name: Build with Maven
         run: mvn clean package
@@ -32,12 +32,12 @@ jobs:
       - name: Deploy to server
         env:
           PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          HOST: ${{ secrets.REMOTE_HOST }}
-          USER: ${{ secrets.REMOTE_USER }}
-          PORT: ${{ secrets.REMOTE_PORT }}
-          TARGET: /home/debian/Teleder-core
+          HOST: ${{ secrets.HOST }}
+          USER: ${{ secrets.USER }}
+          TARGET_DIR: /home/debian/teleder-core
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          scp -i private_key.pem -P $PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar $USER@$HOST:$TARGET
+          scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${{ env.USER }}@${{ env.HOST }}:${{ env.TARGET_DIR }}/app.jar
+          ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ env.USER }}@${{ env.HOST }} "systemctl restart my-spring-boot-app.service"
           rm -f private_key.pem
