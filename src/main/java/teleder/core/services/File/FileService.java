@@ -125,6 +125,13 @@ public class FileService implements IFileService {
     @Override
     public CompletableFuture<File> uploadFileLocal(MultipartFile file, String code) throws IOException {
         Path uploadPath = Paths.get("./uploads");
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         String fileName = System.currentTimeMillis() + "-" + UUID.randomUUID() + "." + FilenameUtils.getExtension(file.getOriginalFilename());
         boolean isImage = file.getContentType().startsWith("image/");
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
@@ -157,6 +164,14 @@ public class FileService implements IFileService {
 
     @Override
     public CompletableFuture<Void> deleteFileLocal(String fileName) {
+        Path uploadPath = Paths.get("./uploads");
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         try {
             if (fileName == null || fileName.trim() == "")
                 throw new NotFoundException("Not found file name");
