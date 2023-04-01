@@ -1,46 +1,46 @@
-#name: Deploy Spring Boot App
-#
-#on:
-#  push:
-#    branches:
-#      - main # Replace with your default branch if different
-#
-#jobs:
-#  build-and-deploy:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v2
-#
-#      - name: Set up JDK 17
-#        uses: actions/setup-java@v2
-#        with:
-#          java-version: '17'
-#          distribution: 'temurin'
-#
-#      - name: Cache Maven dependencies
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/.m2
-#          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-#          restore-keys: ${{ runner.os }}-maven-
-#
-#      - name: Build with Maven
-#        run: mvn clean package
-#
-#      - name: Deploy to server
-#        env:
-#          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-#          HOST: ${{ secrets.REMOTE_HOST }}
-#          USER: ${{ secrets.REMOTE_USER }}
-#          TARGET_DIR: /home/debian/teleder-core
-#        run: |
-#          echo "$SSH_PRIVATE_KEY" > private_key.pem
-#          chmod 600 private_key.pem
-#          scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${{ env.USER }}@${{ env.HOST }}:${{ env.TARGET_DIR }}/app.jar
-#          ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ env.USER }}@${{ env.HOST }} "systemctl restart my-spring-boot-app.service"
-#          rm -f private_key.pem
+name: Deploy Spring Boot App
+
+on:
+  push:
+    branches:
+      - main # Replace with your default branch if different
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Deploy to server
+        env:
+          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.REMOTE_HOST }}
+          USER: ${{ secrets.REMOTE_USER }}
+          TARGET_DIR: /home/debian/teleder-core
+        run: |
+          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${{ env.USER }}@${{ env.HOST }}:${{ env.TARGET_DIR }}/app.jar
+          ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ env.USER }}@${{ env.HOST }} "systemctl restart my-spring-boot-app.service"
+          rm -f private_key.pem
           
           
           
@@ -48,34 +48,3 @@
           
           
 #          /home/debian/teleder-core
-- name: Create systemd service file
-  env:
-    SERVICE_NAME: teleder_core
-    SERVICE_USER: debian
-  run: |
-    echo "[Unit]" >> teleder_core.service
-    echo "Description=$SERVICE_NAME" >> teleder_core.service
-    echo "After=syslog.target" >> teleder_core.service
-    echo "" >> teleder_core.service
-    echo "[Service]" >> teleder_core.service
-    echo "User=$SERVICE_USER" >> teleder_core.service
-    echo "ExecStart=/usr/bin/java -jar ${REMOTE_TARGET}/${SERVICE_NAME}.jar" >> teleder_core.service
-    echo "SuccessExitStatus=143" >> teleder_core.service
-    echo "" >> teleder_core.service
-    echo "[Install]" >> teleder_core.service
-    echo "WantedBy=multi-user.target" >> teleder_core.service
-
-- name: Copy systemd service file and enable service
-  env:
-    SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-    REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-    REMOTE_USER: ${{ secrets.REMOTE_USER }}
-  run: |
-    echo "$SSH_PRIVATE_KEY" > private_key.pem
-    chmod 600 private_key.pem
-    scp -i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null teleder_core.service "${REMOTE_USER}@${REMOTE_HOST}:/tmp"
-    ssh -i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${REMOTE_USER}@${REMOTE_HOST}" "sudo mv /tmp/teleder_core.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable teleder_core"
-
-
-
-
