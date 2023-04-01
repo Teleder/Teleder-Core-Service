@@ -3,6 +3,8 @@ package teleder.core;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.io.File;
+
 @SpringBootApplication
 public class TelederCoreServiceApplication {
     public static void main(String[] args) {
@@ -16,5 +18,8 @@ public class TelederCoreServiceApplication {
         System.out.println("""
                 🚀 Api doc ready at http://localhost:8080/swagger-ui/index.html
                 """);
+        File currentDir = new File(".");
+        String absolutePath = currentDir.getAbsolutePath();
+        System.out.println(absolutePath);
     }
 }
