@@ -1,30 +1,43 @@
-name: Deploy to Server
+name: Auto Deploy
+
 on:
   push:
     branches:
       - main
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
-          distribution: 'temurin'
           java-version: '17'
+          distribution: 'adopt'
 
-      - name: Build and deploy
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Deploy to server
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          USER: ${{ secrets.REMOTE_USER }}
+          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.REMOTE_HOST }}
+          USER: ${{ secrets.REMOTE_USER }}
+          PORT: ${{ secrets.REMOTE_PORT }}
+          TARGET: /home/debian/Teleder-core
         run: |
-          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }}:/home/${{ secrets.USER }}/teleder-core/app.jar
-          ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }} "systemctl restart my-spring-boot-app.service"
+          scp -i private_key.pem -P $PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar $USER@$HOST:$TARGET
           rm -f private_key.pem
-
