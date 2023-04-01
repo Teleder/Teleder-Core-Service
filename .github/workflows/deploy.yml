@@ -1,32 +1,68 @@
-name: Deploy to Server
+#name: Deploy to Server
+#on:
+#  push:
+#    branches:
+#      - main
+#jobs:
+#  deploy:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#
+#      - name: Set up JDK
+#        uses: actions/setup-java@v2
+#        with:
+#          distribution: 'temurin'
+#          java-version: '17'
+#
+#      - name: Build and deploy
+#        run: |
+#          echo "$SSH_PRIVATE_KEY" > private_key.pem
+#          chmod 600 private_key.pem
+#          scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }}:/home/${{ secrets.USER }}/teleder-core/app.jar
+#          ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }} "systemctl restart my-spring-boot-app.service"
+#          rm -f private_key.pem
+#        env:
+#          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+#          USER: ${{ secrets.REMOTE_USER }}
+#          HOST: ${{ secrets.REMOTE_HOST }}
+
+
+name: Deploy to Debian Server
+
 on:
   push:
     branches:
-      - main
+      - main # Replace with the branch you want to deploy
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build and deploy
-        run: |
-          echo "$SSH_PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }}:/home/${{ secrets.USER }}/teleder-core/app.jar
-          ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }} "systemctl restart my-spring-boot-app.service"
-          rm -f private_key.pem
+      - name: Build the project
+        run: ./mvnw clean package -B
+
+      - name: Deploy to Debian Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           USER: ${{ secrets.REMOTE_USER }}
           HOST: ${{ secrets.REMOTE_HOST }}
-
+        run: |
+          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${secrets.REMOTE_USER}@${secrets.REMOTE_HOST}:/home/${{ secrets.USER }}/teleder-core/app.jar
+          ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${USER}@${HOST} "systemctl restart my-spring-boot-app.service"
+          rm -f private_key.pem
 
 
