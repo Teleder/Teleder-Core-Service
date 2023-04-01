@@ -39,5 +39,6 @@ jobs:
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          scp -i private_key.pem -P $PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar $USER@$HOST:$TARGET
-          rm -f private_key.pem
+          scp -i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar $REMOTE_TARGET
+          ssh -i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $REMOTE_TARGET "sudo systemctl stop your-app.service"
+          ssh -i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $REMOTE_TARGET "sudo systemctl start your-app.service"
