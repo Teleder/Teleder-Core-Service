@@ -17,10 +17,15 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ConservationService implements IConservationService {
-    @Autowired
+    final
     IConservationRepository conservationRepository;
-    @Autowired
+    final
     IMessageRepository messageRepository;
+
+    public ConservationService(IConservationRepository conservationRepository, IMessageRepository messageRepository) {
+        this.conservationRepository = conservationRepository;
+        this.messageRepository = messageRepository;
+    }
 
     @Override
     public CompletableFuture<ConservationDto> create(CreateConservationDto input) {

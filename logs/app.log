@@ -179,3 +179,6 @@
 2023-04-01 04:52:54.704  INFO DESKTOP-PH7VFOH --- [nio-8080-exec-9] t.c.m.GlobalApiLoggerInterceptor         : Request Method: [32mGET[0m
 2023-04-01 04:52:54.704  INFO DESKTOP-PH7VFOH --- [nio-8080-exec-9] t.c.m.GlobalApiLoggerInterceptor         : Response Status: 200
 2023-04-01 04:52:54.705  INFO DESKTOP-PH7VFOH --- [nio-8080-exec-9] t.c.m.GlobalApiLoggerInterceptor         : Response Time: 923 ms
+2023-04-01 04:53:33.712  INFO DESKTOP-PH7VFOH --- [ionShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopping...
+2023-04-01 04:53:33.712  INFO DESKTOP-PH7VFOH --- [ionShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@189c5298]]
+2023-04-01 04:53:33.712  INFO DESKTOP-PH7VFOH --- [ionShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopped.

@@ -32,5 +32,5 @@ public interface IConservationRepository extends MongoRepository<Conservation, S
     List<Group> getMyGroups(User user,String search, long skip, int limit);
 
     @Query("{'user_1': ?0, 'group': {$ne: null}}")
-    long countByUser1AndGroup(User user);
+    long countUserMyGroups(User user);
 }

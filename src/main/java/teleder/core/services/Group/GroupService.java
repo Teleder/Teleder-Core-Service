@@ -44,18 +44,26 @@ import static teleder.core.models.Group.Member.Status.WAITING;
 
 @Service
 public class GroupService implements IGroupService {
-    @Autowired
+    final
     SimpMessagingTemplate simpMessagingTemplate;
-    @Autowired
+    final
     IGroupRepository groupRepository;
-    @Autowired
+    final
     IUserRepository userRepository;
-    @Autowired
+    final
     IConservationRepository conservationRepository;
-    @Autowired
+    final
     IPermissionRepository permissionRepository;
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
+
+    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, MongoTemplate mongoTemplate) {
+        this.simpMessagingTemplate = simpMessagingTemplate;
+        this.groupRepository = groupRepository;
+        this.userRepository = userRepository;
+        this.conservationRepository = conservationRepository;
+        this.permissionRepository = permissionRepository;
+        this.mongoTemplate = mongoTemplate;
+    }
 
     @Override
     @Async
@@ -383,7 +391,7 @@ public class GroupService implements IGroupService {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user");
-        return CompletableFuture.completedFuture(conservationRepository.countByUser1AndGroup(user));
+        return CompletableFuture.completedFuture(conservationRepository.countUserMyGroups(user));
     }
 
     @Override

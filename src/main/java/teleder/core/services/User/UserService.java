@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -44,18 +45,27 @@ import java.util.regex.Pattern;
 
 @Service
 public class UserService implements IUserService, UserDetailsService {
-    @Autowired
+    final
+    SimpMessagingTemplate simpMessagingTemplate;
+    final
     IUserRepository userRepository;
-    @Autowired
+    final
     IFileService fileService;
-    @Autowired
-    private MongoTemplate mongoTemplate;
-    @Autowired
+    private final MongoTemplate mongoTemplate;
+    final
     IConservationRepository conservationRepository;
-    @Autowired
-    private ModelMapper toDto;
+    private final ModelMapper toDto;
     private final int width = 300;
     private final int height = 300;
+
+    public UserService(SimpMessagingTemplate simpMessagingTemplate, IUserRepository userRepository, IFileService fileService, MongoTemplate mongoTemplate, IConservationRepository conservationRepository, ModelMapper toDto) {
+        this.simpMessagingTemplate = simpMessagingTemplate;
+        this.userRepository = userRepository;
+        this.fileService = fileService;
+        this.mongoTemplate = mongoTemplate;
+        this.conservationRepository = conservationRepository;
+        this.toDto = toDto;
+    }
 
     @Override
     @Async

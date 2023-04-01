@@ -24,14 +24,21 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class MessageService implements IMessageService {
-    @Autowired
+    final
     SimpMessagingTemplate simpMessagingTemplate;
-    @Autowired
+    final
     IMessageRepository messageRepository;
-    @Autowired
+    final
     IUserRepository userRepository;
-    @Autowired
+    final
     IConservationRepository conservationRepository;
+
+    public MessageService(SimpMessagingTemplate simpMessagingTemplate, IMessageRepository messageRepository, IUserRepository userRepository, IConservationRepository conservationRepository) {
+        this.simpMessagingTemplate = simpMessagingTemplate;
+        this.messageRepository = messageRepository;
+        this.userRepository = userRepository;
+        this.conservationRepository = conservationRepository;
+    }
 
     @Override
     @Async

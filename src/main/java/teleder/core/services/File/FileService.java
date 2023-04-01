@@ -37,12 +37,17 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class FileService implements IFileService {
-    @Autowired
+    final
     IUserRepository userRepository;
-    @Autowired
+    final
     IFileRepository fileRepository;
-    @Autowired
-    private Cloudinary cloudinary;
+    private final Cloudinary cloudinary;
+
+    public FileService(IUserRepository userRepository, IFileRepository fileRepository, Cloudinary cloudinary) {
+        this.userRepository = userRepository;
+        this.fileRepository = fileRepository;
+        this.cloudinary = cloudinary;
+    }
 
     @Override
     @Async
