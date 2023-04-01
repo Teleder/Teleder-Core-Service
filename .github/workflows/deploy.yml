@@ -15,7 +15,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
       - name: Build and deploy
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
