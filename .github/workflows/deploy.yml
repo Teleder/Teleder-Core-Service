@@ -17,14 +17,14 @@ jobs:
           java-version: '17'
 
       - name: Build and deploy
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          USER: ${{ secrets.REMOTE_USER }}
+          HOST: ${{ secrets.REMOTE_HOST }}
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
           scp -i private_key.pem -P 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null target/*.jar ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }}:/home/${{ secrets.USER }}/teleder-core/app.jar
           ssh -i private_key.pem -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER }}@${{ secrets.REMOTE_HOST }} "systemctl restart my-spring-boot-app.service"
           rm -f private_key.pem
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          USER: ${{ secrets.REMOTE_USER }}
-          HOST: ${{ secrets.REMOTE_HOST }}
 
