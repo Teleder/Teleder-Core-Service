@@ -18,6 +18,8 @@ import teleder.core.annotations.ApiPrefixController;
 import teleder.core.middleware.GlobalApiLoggerInterceptor;
 import teleder.core.middleware.RateLimiterInterceptor;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.concurrent.Executor;
 
@@ -70,8 +72,9 @@ public class AppConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+//        String uploadsLocation = "file:" +  Paths.get("").toAbsolutePath().getParent().toString() + "/uploads/";
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:./uploads/");
+                .addResourceLocations("file:" +  Paths.get("").toAbsolutePath().getParent().toString() + "/uploads/");
     }
 
     @Bean
