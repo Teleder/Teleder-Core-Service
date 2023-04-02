@@ -20,7 +20,7 @@ public interface IUserService extends IMongoService<UserDto, CreateUserDto, Upda
 
     CompletableFuture<UserDto> create(CreateUserDto input) throws WriterException, IOException, ExecutionException, InterruptedException;
 
-    CompletableFuture<UserProfileDto> getProfile(HttpServletRequest request);
+    CompletableFuture<UserProfileDto> getProfile(String id);
 
     CompletableFuture<Boolean> addContact(String contactId);
 

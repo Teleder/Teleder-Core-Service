@@ -7,6 +7,8 @@ import org.springframework.http.MediaType;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.annotations.ApiPrefixController;
 import teleder.core.annotations.Authenticate;
 import teleder.core.annotations.RequiresAuthorization;
@@ -65,14 +67,16 @@ public class UserController {
 
     @Authenticate
     @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserProfileDto> getProfile(HttpServletRequest request) {
-        return userService.getProfile(request);
+    public CompletableFuture<UserProfileDto> getProfile() {
+        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        return userService.getProfile(userId);
     }
 
     @Authenticate
     @PatchMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserDto> updateProfile(HttpServletRequest request, @RequestBody UpdateUserDto input) {
-        return userService.update(((User) request.getAttribute("user")).getId(), input);
+    public CompletableFuture<UserDto> updateProfile( @RequestBody UpdateUserDto input) {
+        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        return userService.update(userId, input);
     }
 
     @Authenticate

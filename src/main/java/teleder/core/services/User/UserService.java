@@ -86,8 +86,10 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<UserProfileDto> getProfile(HttpServletRequest request) {
-        User user = userRepository.findByPhoneAndEmail(((User) request.getAttribute("user")).getEmail()).get(0);
+    public CompletableFuture<UserProfileDto> getProfile(String id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null)
+            throw new NotFoundException("Not found user!");
         return CompletableFuture.completedFuture(toDto.map(user, UserProfileDto.class));
     }
 
