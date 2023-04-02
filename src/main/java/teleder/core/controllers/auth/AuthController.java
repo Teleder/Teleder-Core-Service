@@ -15,6 +15,8 @@ import teleder.core.models.User.User;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.User.dtos.UserProfileDto;
 
+import java.util.List;
+
 @RestController
 @ApiPrefixController("/auth")
 public class AuthController {
@@ -30,26 +32,28 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid LoginInputDto loginRequest) throws Exception {
-        final User user = userRepository.findByPhoneAndEmail(loginRequest.getUsername()).get(0);
-        if (user == null) {
-            throw new Exception("Cannot find user with email");
-        }
-        if (!JwtTokenUtil.comparePassword(loginRequest.getPassword(), user.getPassword())) {
+        final List<User> users = userRepository.findByPhoneAndEmail(loginRequest.getUsername());
+        if (users == null)
+            throw new Exception("Cannot find user with email or phone");
+
+        if (!JwtTokenUtil.comparePassword(loginRequest.getPassword(), users.get(0).getPassword())) {
             throw new Exception("Password not correct");
         }
-        final String accessToken = jwtUtil.generateAccessToken(user);
-        final String refreshToken = jwtUtil.generateRefreshToken(user);
+        final String accessToken = jwtUtil.generateAccessToken(users.get(0));
+        final String refreshToken = jwtUtil.generateRefreshToken(users.get(0));
         toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        return ResponseEntity.ok(new LoginDto(accessToken, refreshToken, toDto.map(user, UserProfileDto.class)));
+        return ResponseEntity.ok(new LoginDto(accessToken, refreshToken, toDto.map(users.get(0), UserProfileDto.class)));
     }
 
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshAuthenticationToken(@RequestBody @Valid RefreshTokenInput refreshTokenRequest) throws Exception {
         final String refreshToken = refreshTokenRequest.getRefreshToken();
         // Check if the refresh token is valid and not expired
-        final User userDetails = userRepository.findByPhoneAndEmail(jwtUtil.getUsernameFromToken(refreshToken)).get(0);
-        if (jwtUtil.validateToken(refreshToken, userDetails)) {
-            final String accessToken = jwtUtil.generateAccessToken(userDetails);
+        final List<User> users = userRepository.findByPhoneAndEmail(jwtUtil.getUsernameFromToken(refreshToken));
+        if (users == null)
+            throw new Exception("Cannot find user with email or phone");
+        if (jwtUtil.validateToken(refreshToken, users.get(0))) {
+            final String accessToken = jwtUtil.generateAccessToken(users.get(0));
             return ResponseEntity.ok(new RefreshTokenDto(accessToken, refreshToken));
         }
         throw new Exception("Invalid refresh token");
