@@ -29,7 +29,7 @@ public class GlobalApiLoggerInterceptor implements HandlerInterceptor {
             logger.info("Response Time: {} ms", responseTime);
             // Add response after if have time
         }else{
-            logger.info("Request IP: {}",  InetAddress.getLocalHost().getHostAddress());
+            logger.info("Request IP: {}",  request.getRemoteAddr());
         }
     }
 
