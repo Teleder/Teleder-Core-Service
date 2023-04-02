@@ -11,7 +11,7 @@ public class LoginDto {
     public String accessToken;
     @JsonProperty(value = "refreshToken", required = true)
     public String refreshToken;
-    @JsonProperty(value = "UserProfileDto", required = true)
+    @JsonProperty(value = "user", required = true)
     public UserProfileDto user;
 
     public LoginDto(String accessToken, String refreshToken, UserProfileDto user) {
