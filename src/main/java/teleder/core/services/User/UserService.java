@@ -77,7 +77,7 @@ public class UserService implements IUserService, UserDetailsService {
         User user = toDto.map(input, User.class);
         MultipartFile qrCodeImage = QRCodeGenerator.generateQRCodeImage(input.getEmail(), width, height);
         File file = fileService.uploadFileLocal(qrCodeImage, user.getEmail()).get();
-        user.setAvatar(file);
+        user.setQR(file);
         user.setDisplayName(user.getFirstName() + " " + user.getLastName());
         user.setPassword(JwtTokenUtil.hashPassword(user.getPassword()));
         return CompletableFuture.completedFuture(toDto.map(userRepository.insert(user), UserDto.class));
