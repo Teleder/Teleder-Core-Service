@@ -16,7 +16,7 @@ public class GlobalApiLoggerInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-//        if (request.getRequestURI().contains("api")) {
+        if (request.getRequestURI().contains("api")) {
             String requestId = (String) request.getAttribute("requestId");
             String requestIP = (String) request.getAttribute("requestIP");
             String responseStatus = String.valueOf(response.getStatus());
@@ -29,7 +29,9 @@ public class GlobalApiLoggerInterceptor implements HandlerInterceptor {
             logger.info("Response Status: {}", responseStatus);
             logger.info("Response Time: {} ms", responseTime);
             // Add response after if have time
-//        }
+        }else{
+            logger.info("Request IP: {}",  request.getAttribute("requestIP"));
+        }
     }
 
     @Override
