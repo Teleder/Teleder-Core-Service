@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -65,7 +66,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Group> createGroup(Group input) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user");
@@ -75,7 +76,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Group> addMemberToGroup(String groupId, String memberId) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = null;
         User member = userRepository.findById(memberId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
@@ -121,7 +122,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Group> blockMemberFromGroup(String groupId, String memberId, String reason) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         User member = userRepository.findById(memberId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
@@ -158,7 +159,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Group> removeBlockMemberFromGroup(String groupId, String memberId) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         User member = userRepository.findById(memberId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
@@ -197,7 +198,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Group> removeMemberFromGroup(String groupId, String memberId) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         User member = userRepository.findById(memberId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
@@ -247,7 +248,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Group> decentralization(String groupId, String memberId, String roleName) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         User member = userRepository.findById(memberId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
@@ -428,7 +429,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Long> countMyGroup() {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user");
@@ -438,7 +439,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<List<Group>> getMyGroupsPaginate(String groupId, String search, long skip, int limit) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user");
@@ -448,7 +449,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Void> leaveGroup(String groupId) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
         if (user == null)
@@ -475,7 +476,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Group> createRoleForGroup(String groupId, String roleName, List<Action> permissions) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
         if (user == null)
@@ -503,7 +504,7 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Void> deleteRoleForGroup(String groupId, String roleName) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
         if (user == null)

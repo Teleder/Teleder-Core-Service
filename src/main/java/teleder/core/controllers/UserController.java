@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -68,14 +69,14 @@ public class UserController {
     @Authenticate
     @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
     public CompletableFuture<UserProfileDto> getProfile() {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();;
         return userService.getProfile(userId);
     }
 
     @Authenticate
     @PatchMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
     public CompletableFuture<UserDto> updateProfile( @RequestBody UpdateUserDto input) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return userService.update(userId, input);
     }
 

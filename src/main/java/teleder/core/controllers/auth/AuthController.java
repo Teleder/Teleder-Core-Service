@@ -51,11 +51,11 @@ public class AuthController {
     public ResponseEntity<?> refreshAuthenticationToken(@RequestBody @Valid RefreshTokenInput refreshTokenRequest) throws Exception {
         final String refreshToken = refreshTokenRequest.getRefreshToken();
         // Check if the refresh token is valid and not expired
-        final List<User> users = userRepository.findByPhoneAndEmail(jwtUtil.getUsernameFromToken(refreshToken));
-        if (users == null)
+        final User user = userRepository.findById(jwtUtil.getUsernameFromToken(refreshToken)).orElse(null);
+        if (user == null)
             throw new RuntimeException("Cannot find user with email or phone");
-        if (jwtUtil.validateToken(refreshToken, users.get(0))) {
-            final String accessToken = jwtUtil.generateAccessToken(users.get(0));
+        if (jwtUtil.validateToken(refreshToken, user)) {
+            final String accessToken = jwtUtil.generateAccessToken(user);
             return ResponseEntity.ok(new RefreshTokenDto(accessToken, refreshToken));
         }
         throw new Exception("Invalid refresh token");

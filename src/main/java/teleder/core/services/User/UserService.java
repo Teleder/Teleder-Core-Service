@@ -96,7 +96,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Async
     public CompletableFuture<Boolean> addContact(String contactId) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<User> contactOptional = userRepository.findById(contactId);
         if (userOptional.isPresent() && contactOptional.isPresent()) {
@@ -115,7 +115,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Async
     public CompletableFuture<Boolean> blockContact(String contact_id, String reason) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<User> contactOptional = userRepository.findById(contact_id);
         if (userOptional.isPresent() && contactOptional.isPresent()) {
@@ -141,7 +141,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Async
     public CompletableFuture<Boolean> removeContact(String contactId) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<User> contactOptional = userRepository.findById(contactId);
 
@@ -157,7 +157,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Async
     public CompletableFuture<Boolean> removeBlock(String contactId) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<User> contactOptional = userRepository.findById(contactId);
 
@@ -202,7 +202,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Async
     public CompletableFuture<PagedResultDto<Contact>> getListContact(String displayName, long skip, int limit) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
 //        MatchOperation matchOperation = Aggregation.match(
 //                Criteria.where("list_contact.user.displayName").regex(displayName, "i").and("_id").is(userId)
 //        );
@@ -226,7 +226,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(String displayName, long skip, int limit) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
 
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(userId)),
@@ -249,7 +249,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     public CompletableFuture<Boolean> respondToRequestForContacts(String contact_id, Boolean accept) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         User contact = userRepository.findById(contact_id).orElse(null);
         Contact friend = null;
@@ -309,7 +309,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     public CompletableFuture<List<Contact>> getListContactRequestSend() {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(userId)),
                 Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.WAITING)),
@@ -360,7 +360,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String input) throws UsernameNotFoundException {
-        User user = userRepository.findByPhoneAndEmail(input).get(0);
+        User user = userRepository.findById(input).orElse(null);
         if (user == null) {
             throw new UsernameNotFoundException("User not found with email or phone: " + input);
         } else {

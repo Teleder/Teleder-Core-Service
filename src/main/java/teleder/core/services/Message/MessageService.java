@@ -2,6 +2,7 @@ package teleder.core.services.Message;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -42,7 +43,7 @@ public class MessageService implements IMessageService {
 
     @Override
     public void sendPrivateMessage(String contactId, Message message) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         // check conservation da tao hay chua neu chua tao thi tao moi
         User user = userRepository.findById(userId).orElse(null);
         User contact = userRepository.findById(contactId).orElse(null);
@@ -71,7 +72,7 @@ public class MessageService implements IMessageService {
 
     @Override
     public void sendGroupMessage(String groupId, Message message) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         Conservation conservation = user.getConservations().stream()
                 .filter(x -> x.getGroup().getId().contains(groupId))
@@ -88,7 +89,7 @@ public class MessageService implements IMessageService {
 
     @Override
     public CompletableFuture<List<Message>> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().contains(code)))
             throw new NotFoundException("Not Found Conservation!");
         List<Message> messages = messageRepository.findMessagesWithPaginationAndSearch(skip, limit, code, content);

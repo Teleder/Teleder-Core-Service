@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -189,7 +190,7 @@ public class FileService implements IFileService {
     @Override
     @Async
     public CompletableFuture<List<File>> findFileWithPaginationAndSearch(long skip, int limit, String code) {
-        String userId = ((User) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getId();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().equals(code)))
             throw new NotFoundException("Not Found Conservation!");
         List<File> files = fileRepository.findFileWithPaginationAndSearch(skip, limit, code);
