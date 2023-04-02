@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import teleder.core.annotations.ApiPrefixController;
 import teleder.core.config.JwtTokenUtil;
+import teleder.core.exceptions.NotFoundException;
+import teleder.core.exceptions.UnauthorizedException;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.User.dtos.UserProfileDto;
@@ -34,10 +36,10 @@ public class AuthController {
     public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid LoginInputDto loginRequest) throws Exception {
         final List<User> users = userRepository.findByPhoneAndEmail(loginRequest.getUsername());
         if (users == null)
-            throw new Exception("Cannot find user with email or phone");
+            throw new NotFoundException("Cannot find user with email or phone");
 
         if (!JwtTokenUtil.comparePassword(loginRequest.getPassword(), users.get(0).getPassword())) {
-            throw new Exception("Password not correct");
+            throw new UnauthorizedException("Password not correct");
         }
         final String accessToken = jwtUtil.generateAccessToken(users.get(0));
         final String refreshToken = jwtUtil.generateRefreshToken(users.get(0));
@@ -51,7 +53,7 @@ public class AuthController {
         // Check if the refresh token is valid and not expired
         final List<User> users = userRepository.findByPhoneAndEmail(jwtUtil.getUsernameFromToken(refreshToken));
         if (users == null)
-            throw new Exception("Cannot find user with email or phone");
+            throw new RuntimeException("Cannot find user with email or phone");
         if (jwtUtil.validateToken(refreshToken, users.get(0))) {
             final String accessToken = jwtUtil.generateAccessToken(users.get(0));
             return ResponseEntity.ok(new RefreshTokenDto(accessToken, refreshToken));
