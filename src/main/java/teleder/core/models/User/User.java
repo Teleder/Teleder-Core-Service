@@ -26,7 +26,7 @@ public class User extends BaseModel implements UserDetails {
     private String bio;
     @DBRef
     private File avatar;
-    private String QR;
+    private File QR;
     private List<Block> list_block;
     private String password;
     private List<Conservation> conservations;
