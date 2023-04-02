@@ -21,7 +21,6 @@ public class GlobalApiLoggerInterceptor implements HandlerInterceptor {
             String requestIP = (String) request.getAttribute("requestIP");
             String responseStatus = String.valueOf(response.getStatus());
             String responseTime = String.valueOf(System.currentTimeMillis() - (Long) request.getAttribute("startTime"));
-
             logger.info("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
             logger.info("Request ID: " + "\u001B[32m" + "{}" + "\u001B[0m", requestId);
             logger.info("Request IP: {}", requestIP);
