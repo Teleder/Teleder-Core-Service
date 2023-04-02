@@ -74,8 +74,10 @@ public class AppConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
 //        String uploadsLocation = "file:" +  Paths.get("").toAbsolutePath().getParent().toString() + "/uploads/";
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" +  Paths.get("").toAbsolutePath().getParent().toString() + "/uploads/");
+//                .addResourceLocations("file:" +  Paths.get("").toAbsolutePath().getParent().toString() + "/uploads/");
+                .addResourceLocations("file:./uploads/");
     }
+
 
     @Bean
     public Cloudinary cloudinaryConfig() {

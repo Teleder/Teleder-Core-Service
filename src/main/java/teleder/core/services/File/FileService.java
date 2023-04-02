@@ -153,11 +153,11 @@ public class FileService implements IFileService {
                 fileData = newImageBytes.toByteArray();
             }
             Files.write(path, fileData);
-            String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : request.getRemoteAddr()) + ":" + request.getLocalPort() + "/uploads/" + fileName;
+            String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : "51.79.221.224") + ":" + request.getLocalPort() + "/uploads/" + fileName;
             return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code)));
         } else {
             Files.write(path, file.getBytes());
-            String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : request.getRemoteAddr()) + ":" + request.getLocalPort() + "/uploads/" + fileName;
+            String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : "51.79.221.224") + ":" + request.getLocalPort() + "/uploads/" + fileName;
             return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code)));
         }
     }
