@@ -35,7 +35,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid LoginInputDto loginRequest) throws Exception {
         final List<User> users = userRepository.findByPhoneAndEmail(loginRequest.getUsername());
-        if (users == null)
+        if (users.size() == 0)
             throw new NotFoundException("Cannot find user with email or phone");
 
         if (!JwtTokenUtil.comparePassword(loginRequest.getPassword(), users.get(0).getPassword())) {
