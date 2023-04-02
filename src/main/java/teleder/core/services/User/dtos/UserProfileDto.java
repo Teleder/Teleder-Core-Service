@@ -17,6 +17,8 @@ public class UserProfileDto {
     private String firstName;
     @JsonProperty(value = "lastName")
     private String lastName;
+    @JsonProperty(value = "displayName")
+    private String displayName;
     @JsonProperty(value = "phone")
     private String phone;
     @JsonProperty(value = "email")
