@@ -98,7 +98,7 @@ public class AppConfig implements WebMvcConfigurer {
     @Bean
     public RateLimiterRegistry rateLimiterRegistry() {
         RateLimiterConfig config = RateLimiterConfig.custom()
-                .limitForPeriod(1000)
+                .limitForPeriod(10000)
                 .limitRefreshPeriod(Duration.ofHours(1))
                 .timeoutDuration(Duration.ofMillis(25))
                 .build();
