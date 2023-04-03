@@ -2,6 +2,7 @@ package teleder.core.models.User;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,13 +22,16 @@ public class User extends BaseModel implements UserDetails {
     private String firstName;
     private String lastName;
     private String displayName;
+    @Indexed(unique = true)
     private String phone;
+    @Indexed(unique = true)
     private String email;
+    @Indexed(unique = true)
     private String bio;
     @DBRef
     private File avatar;
-    private File QR;
-    private List<Block> list_block;
+    private File qr;
+    private List<Block> blocks;
     private String password;
     private List<Conservation> conservations;
     private Role role = Role.USER;

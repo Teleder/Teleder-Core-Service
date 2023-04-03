@@ -13,6 +13,7 @@ public class CreateUserDto {
     @JsonProperty(value = "lastName", required = true)
     private String lastName;
     @JsonProperty(value = "phone", required = true)
+    @Pattern(regexp ="^\\d{10,11}$", message = "Phone have 10 to 11 digit")
     private String phone;
     @JsonProperty(value = "email")
     @NotBlank(message = "Email is mandatory")
@@ -22,6 +23,6 @@ public class CreateUserDto {
     private String bio;
     @JsonProperty(value = "password")
     @NotBlank(message = "Password is mandatory")
-    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{6,16}$", message = "Password must be 6-16 characters long, with at least one special character, one lowercase letter, one uppercase letter, and one number")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[-+_!@#$%^&*.,?]).{6,16}$", message = "Password must be 6-16 characters long, with at least one special character, one lowercase letter, one uppercase letter, and one number")
     private String password;
 }
