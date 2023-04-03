@@ -24,9 +24,9 @@ public class IndexConfiguration implements CommandLineRunner{
         if (skipCommandLineRunners) {
             return;
         }
-        createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
-        createUniqueIndexIfNotExists(mongoTemplate, "User", "phone");
-        createUniqueIndexIfNotExists(mongoTemplate, "User", "email");
+//        createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
+//        createUniqueIndexIfNotExists(mongoTemplate, "User", "phone");
+//        createUniqueIndexIfNotExists(mongoTemplate, "User", "email");
     }
 
 
