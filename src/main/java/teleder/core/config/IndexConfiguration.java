@@ -18,6 +18,8 @@ public class IndexConfiguration {
     private boolean skipCommandLineRunners;
     @Bean
     public CommandLineRunner ensureUniqueIndexes(MongoTemplate mongoTemplate) {
+        if (skipCommandLineRunners)
+            return null;
         try {
             return args -> {
                 createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
