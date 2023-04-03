@@ -29,8 +29,8 @@ public class UserProfileDto {
     private File avatar;
     @JsonProperty(value = "qr")
     private File qr;
-    @JsonProperty(value = "list_block")
-    private List<Block> list_block;
+    @JsonProperty(value = "blocks")
+    private List<Block> blocks;
     @JsonProperty(value = "conservation")
     private List<Conservation> conservation;
     @JsonProperty(value = "role")

@@ -12,8 +12,8 @@ import java.util.List;
 public class UpdateUserDto extends CreateUserDto {
     @JsonProperty(value = "avatar")
     private File avatar;
-    @JsonProperty(value = "list_block")
-    private List<Block> list_block;
+    @JsonProperty(value = "blocks")
+    private List<Block> blocks;
     @JsonProperty(value = "conservation")
     private List<Conservation> conservation;
 }

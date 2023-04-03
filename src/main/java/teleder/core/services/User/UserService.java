@@ -77,7 +77,7 @@ public class UserService implements IUserService, UserDetailsService {
         User user = toDto.map(input, User.class);
         MultipartFile qrCodeImage = QRCodeGenerator.generateQRCodeImage(input.getEmail(), width, height);
         File file = fileService.uploadFileLocal(qrCodeImage, user.getEmail()).get();
-        user.setQR(file);
+        user.setQr(file);
         user.setDisplayName(user.getFirstName() + " " + user.getLastName());
         user.setPassword(JwtTokenUtil.hashPassword(user.getPassword()));
         return CompletableFuture.completedFuture(toDto.map(userRepository.insert(user), UserDto.class));
@@ -121,7 +121,7 @@ public class UserService implements IUserService, UserDetailsService {
             User user = userOptional.get();
             User contact = contactOptional.get();
             // them vao danh sach chan
-            user.getList_block().add(new Block(contact, reason));
+            user.getBlocks().add(new Block(contact, reason));
             for (Conservation x : user.getConservations()) {
                 if (x.getUser_2().getId().contains(contact.getId()) || x.getUser_1().getId().contains(contact.getId())) {
                     x.setStatus(false);
@@ -165,19 +165,19 @@ public class UserService implements IUserService, UserDetailsService {
             User contact = contactOptional.get();
 
             Block blockToRemove = null;
-            for (Block block : user.getList_block()) {
+            for (Block block : user.getBlocks()) {
                 if (block.getUser().getId().contains(contact.getId())) {
                     blockToRemove = block;
                     break;
                 }
             }
             if (blockToRemove != null) {
-                user.getList_block().remove(blockToRemove);
+                user.getBlocks().remove(blockToRemove);
                 userRepository.save(user);
             }
             // Kiểm tra xem bên kia có chặn không nếu có thì vẫn để status = false nếu 2 bên không chặn nhau thì set lại status
             blockToRemove = null;
-            for (Block block : contact.getList_block()) {
+            for (Block block : contact.getBlocks()) {
                 if (block.getUser().getId().contains(user.getId())) {
                     blockToRemove = block;
                     break;
@@ -262,7 +262,7 @@ public class UserService implements IUserService, UserDetailsService {
                 }
             }
             if (friend != null) {
-                user.getList_block().remove(friend);
+                user.getBlocks().remove(friend);
                 userRepository.save(user);
             }
             for (Contact f : contact.getList_contact()) {
@@ -272,7 +272,7 @@ public class UserService implements IUserService, UserDetailsService {
                 }
             }
             if (friend != null) {
-                contact.getList_block().remove(friend);
+                contact.getBlocks().remove(friend);
                 userRepository.save(contact);
             }
             simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.DENY_CONTACT));
