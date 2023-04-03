@@ -311,6 +311,7 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
+
     @Override
     public CompletableFuture<List<Contact>> getListContactRequestSend() {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
