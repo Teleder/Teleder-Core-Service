@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class IndexConfiguration implements CommandLineRunner{
 
-    @Value("${app.skip-command-line-runners:false}")
+    @Value("${app.cicd.skip-command-line-runners:false}")
     private boolean skipCommandLineRunners;
     private final MongoTemplate mongoTemplate;
     public IndexConfiguration(MongoTemplate mongoTemplate) {
@@ -24,9 +24,9 @@ public class IndexConfiguration implements CommandLineRunner{
         if (skipCommandLineRunners) {
             return;
         }
-//        createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
-//        createUniqueIndexIfNotExists(mongoTemplate, "User", "phone");
-//        createUniqueIndexIfNotExists(mongoTemplate, "User", "email");
+        createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
+        createUniqueIndexIfNotExists(mongoTemplate, "User", "phone");
+        createUniqueIndexIfNotExists(mongoTemplate, "User", "email");
     }
 
 
