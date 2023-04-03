@@ -58,8 +58,6 @@ public class UserService implements IUserService, UserDetailsService {
     final
     IConservationRepository conservationRepository;
     private final ModelMapper toDto;
-    private final int width = 300;
-    private final int height = 300;
 
     public UserService(SimpMessagingTemplate simpMessagingTemplate, IUserRepository userRepository, IFileService fileService, IMessageRepository messageRepository, MongoTemplate mongoTemplate, IConservationRepository conservationRepository, ModelMapper toDto) {
         this.simpMessagingTemplate = simpMessagingTemplate;
@@ -75,6 +73,8 @@ public class UserService implements IUserService, UserDetailsService {
     @Async
     public CompletableFuture<UserDto> create(CreateUserDto input) throws WriterException, IOException, ExecutionException, InterruptedException {
         User user = toDto.map(input, User.class);
+        int width = 300;
+        int height = 300;
         MultipartFile qrCodeImage = QRCodeGenerator.generateQRCodeImage(input.getEmail(), width, height);
         File file = fileService.uploadFileLocal(qrCodeImage, user.getEmail()).get();
         user.setQr(file);
@@ -224,7 +224,7 @@ public class UserService implements IUserService, UserDetailsService {
         );
 
         List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
-        long totalCount = userRepository.findById(userId).get().getList_contact().stream().count();
+        long totalCount = userRepository.findById(userId).get().getList_contact().size();
         return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts));
     }
 
@@ -259,7 +259,7 @@ public class UserService implements IUserService, UserDetailsService {
         Contact friend = null;
         if (user == null || contact == null)
             throw new NotFoundException("Not found user");
-        if (accept == false) {
+        if (!accept) {
             for (Contact f : user.getList_contact()) {
                 if (f.getUser().getId().contains(contact.getId())) {
                     friend = f;
@@ -305,7 +305,7 @@ public class UserService implements IUserService, UserDetailsService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
             Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
-            mess = messageRepository.save(mess);
+            messageRepository.save(mess);
             simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.ACCEPT_CONTACT));
             return CompletableFuture.completedFuture(true);
         }
