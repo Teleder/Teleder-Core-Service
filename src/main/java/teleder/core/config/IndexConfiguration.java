@@ -14,12 +14,17 @@ public class IndexConfiguration {
 
     @Bean
     public CommandLineRunner ensureUniqueIndexes(MongoTemplate mongoTemplate) {
-        return args -> {
-            createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
-            createUniqueIndexIfNotExists(mongoTemplate, "User", "phone");
-            createUniqueIndexIfNotExists(mongoTemplate, "User", "email");
+        try {
+            return args -> {
+                createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
+                createUniqueIndexIfNotExists(mongoTemplate, "User", "phone");
+                createUniqueIndexIfNotExists(mongoTemplate, "User", "email");
 
-        };
+            };
+        }catch (RuntimeException e){
+            return null;
+        }
+
     }
 
     private void createUniqueIndexIfNotExists(MongoTemplate mongoTemplate, String collectionName, String fieldName) {
