@@ -2,10 +2,10 @@ package teleder.core.repositories;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import teleder.core.models.User.User;
 
 import java.util.List;
-
 public interface IUserRepository extends MongoRepository<User, String> {
     @Query(value ="{ $or: [ { 'email': ?0 }, { 'phone': ?0 } ] }")
     List<User> findByPhoneAndEmail(String input);

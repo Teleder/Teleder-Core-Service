@@ -14,6 +14,6 @@ public class UpdateUserDto extends CreateUserDto {
     private File avatar;
     @JsonProperty(value = "blocks")
     private List<Block> blocks;
-    @JsonProperty(value = "conservation")
-    private List<Conservation> conservation;
+    @JsonProperty(value = "conservations")
+    private List<Conservation> conservations;
 }

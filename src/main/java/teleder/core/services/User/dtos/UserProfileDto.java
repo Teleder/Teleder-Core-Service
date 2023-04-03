@@ -32,7 +32,7 @@ public class UserProfileDto {
     @JsonProperty(value = "blocks")
     private List<Block> blocks;
     @JsonProperty(value = "conservation")
-    private List<Conservation> conservation;
+    private List<Conservation> conservations    ;
     @JsonProperty(value = "role")
     private User.Role role;
 }

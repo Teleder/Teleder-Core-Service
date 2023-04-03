@@ -23,7 +23,7 @@ public class Message extends BaseModel {
     @NonNull
     private String code;
     @NonNull
-    private String TYPE = CONSTS.MESSAGE_PRIVATE;
+    private String TYPE;
     @DBRef
     private User user_send;
     @DBRef

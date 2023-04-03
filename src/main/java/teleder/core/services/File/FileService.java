@@ -12,6 +12,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.File.File;
+import teleder.core.models.File.FileCategory;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IFileRepository;
 import teleder.core.repositories.IUserRepository;
@@ -83,8 +84,8 @@ public class FileService implements IFileService {
 
     @Override
     public CompletableFuture<File> uploadFileCloud(MultipartFile file, String code) throws IOException {
-        boolean isImage = file.getContentType().startsWith("image/");
-        if (isImage) {
+        FileCategory type = FileCategorize.categorize(file.getOriginalFilename());
+        if (type == FileCategory.IMAGE) {
             byte[] fileData = file.getBytes();
             BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(fileData));
             int newWidth = 1920;
@@ -102,12 +103,12 @@ public class FileService implements IFileService {
             Map<String, Object> uploadResult = cloudinary.uploader().upload(fileData, ObjectUtils.emptyMap());
             String fileUrl = (String) uploadResult.get("url");
             String[] name = fileUrl.split("/");
-            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length - 1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length - 1].split("\\.")[0], type, file.getSize(), fileUrl, code)));
         } else {
             Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
             String fileUrl = (String) uploadResult.get("url");
             String[] name = fileUrl.split("/");
-            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length - 1].split(".")[0], FileCategorize.categorize(file.getName()), file.getSize(), fileUrl, code)));
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(name[name.length - 1].split("\\.")[0], type, file.getSize(), fileUrl, code)));
         }
     }
 
@@ -125,6 +126,7 @@ public class FileService implements IFileService {
 
     @Override
     public CompletableFuture<File> uploadFileLocal(MultipartFile file, String code) throws IOException {
+        FileCategory type = FileCategorize.categorize(file.getOriginalFilename());
         Path uploadPath = Paths.get("./uploads");
         if (!Files.exists(uploadPath)) {
             try {
@@ -134,11 +136,10 @@ public class FileService implements IFileService {
             }
         }
         String fileName = System.currentTimeMillis() + "-" + UUID.randomUUID() + "." + FilenameUtils.getExtension(file.getOriginalFilename());
-        boolean isImage = file.getContentType().startsWith("image/");
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
 
         Path path = Paths.get(uploadPath.toString(), fileName);
-        if (isImage) {
+        if (type== FileCategory.IMAGE) {
             byte[] fileData = file.getBytes();
             BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(fileData));
             int newWidth = 1920;
@@ -155,11 +156,11 @@ public class FileService implements IFileService {
             }
             Files.write(path, fileData);
             String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : "51.79.221.224") + ":" + request.getLocalPort() + "/uploads/" + fileName;
-            return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code)));
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, type, file.getSize(), url, code)));
         } else {
             Files.write(path, file.getBytes());
             String url = (request.getRemoteAddr().equalsIgnoreCase("0:0:0:0:0:0:0:1") ? "localhost" : "51.79.221.224") + ":" + request.getLocalPort() + "/uploads/" + fileName;
-            return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, FileCategorize.categorize(file.getName()), file.getSize(), url, code)));
+            return CompletableFuture.completedFuture(fileRepository.insert(new File(fileName, type, file.getSize(), url, code)));
         }
     }
 
@@ -176,8 +177,9 @@ public class FileService implements IFileService {
         try {
             if (fileName == null || fileName.trim() == "")
                 throw new NotFoundException("Not found file name");
-            java.io.File file = new java.io.File("./uploads" + fileName);
+            java.io.File file = new java.io.File("./uploads/" + fileName);
             if (file.delete()) {
+                fileRepository.delete(fileRepository.findByName(fileName).orElse(null));
                 return CompletableFuture.completedFuture(null);
             } else {
                 throw new RuntimeException("Some thing went wrong!");

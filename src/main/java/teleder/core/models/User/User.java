@@ -22,11 +22,8 @@ public class User extends BaseModel implements UserDetails {
     private String firstName;
     private String lastName;
     private String displayName;
-    @Indexed(unique = true)
     private String phone;
-    @Indexed(unique = true)
     private String email;
-    @Indexed(unique = true)
     private String bio;
     @DBRef
     private File avatar;
@@ -35,10 +32,8 @@ public class User extends BaseModel implements UserDetails {
     private String password;
     private List<Conservation> conservations;
     private Role role = Role.USER;
-    //    List <Message> list_
     private List<Contact> list_contact;
     boolean isActive = false;
-
     public User() {
         this.firstName = "12";
     }

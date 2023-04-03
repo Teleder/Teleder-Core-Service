@@ -23,4 +23,6 @@ public interface IFileRepository extends MongoRepository<File, String> {
             "{ $project: { _id: 0 } }"
     })
     Optional<Long> countFileByCode(String code);
+
+    Optional<File> findByName(String name);
 }

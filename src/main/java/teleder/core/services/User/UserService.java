@@ -80,7 +80,12 @@ public class UserService implements IUserService, UserDetailsService {
         user.setQr(file);
         user.setDisplayName(user.getFirstName() + " " + user.getLastName());
         user.setPassword(JwtTokenUtil.hashPassword(user.getPassword()));
-        return CompletableFuture.completedFuture(toDto.map(userRepository.insert(user), UserDto.class));
+        try {
+            return CompletableFuture.completedFuture(toDto.map(userRepository.insert(user), UserDto.class));
+        } catch (Exception e) {
+            fileService.deleteFileLocal(file.getName());
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     @Override

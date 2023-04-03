@@ -2,9 +2,10 @@ package teleder.core;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 import java.io.File;
-
+//@EnableMongoRepositories(basePackages = "teleder.core.repositories")
 @SpringBootApplication
 public class TelederCoreServiceApplication {
     public static void main(String[] args) {
