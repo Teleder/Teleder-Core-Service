@@ -37,11 +37,11 @@ public class User extends BaseModel implements UserDetails {
 
     private Role role = Role.USER;
     private List<Contact> list_contact = new ArrayList<>();
-    boolean isActive = false;
+   public boolean isActive = false;
     public User() {
         // Hàm tạo không đối số
     }
-    public User(String id, String firstName, String lastName, String displayName, String bio, File avatar, File qr) {
+    public User(String id, String firstName, String lastName, String displayName, String bio, File avatar, File qr, Boolean isActive) {
         this.id = id;
         this.firstName = firstName;
         this.lastName =lastName;
@@ -49,6 +49,7 @@ public class User extends BaseModel implements UserDetails {
         this.bio = bio;
         this.avatar = avatar;
         this.qr = qr;
+        this.isActive = isActive;
     }
 
     public String getRole() {

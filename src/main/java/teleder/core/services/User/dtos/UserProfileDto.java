@@ -33,7 +33,7 @@ public class UserProfileDto {
     private File qr;
     @JsonProperty(value = "blocks")
     private List<Block> blocks;
-    @JsonProperty(value = "conservation")
+    @JsonProperty(value = "conservations")
     private List<Conservation> conservations = new ArrayList<>();
     @JsonProperty(value = "role")
     private User.Role role;

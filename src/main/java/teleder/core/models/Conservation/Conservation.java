@@ -25,6 +25,8 @@ public class Conservation extends BaseModel {
     private String code = UUID.randomUUID().toString();
     private Type type = Type.PERSONAL;
     private List<PinMessage> pinMessage = new ArrayList<>();
+    @DBRef
+    Message lastMessage;
     private UserConservationDto user_1;
     private UserConservationDto user_2;
     @DBRef
@@ -33,6 +35,10 @@ public class Conservation extends BaseModel {
         this.user_2 = user_2;
         this.user_1 = user_1;
         this.group = group;
+    }
+
+    public Group getGroup() {
+        return group;
     }
 
     public Conservation(Group group, String code) {

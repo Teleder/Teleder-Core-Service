@@ -8,7 +8,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import teleder.core.models.BaseModel;
 import teleder.core.models.Group.Group;
 import teleder.core.models.User.User;
-import teleder.core.utils.CONSTS;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +29,27 @@ public class Message extends BaseModel {
     private User user_receive;
     @DBRef
     private Group group;
+
+    public User getUser_receive() {
+        if (this.user_receive == null)
+            return null;
+        return new User(user_receive.getId(), user_receive.getFirstName(), user_receive.getLastName(),
+                user_receive.getDisplayName(), user_receive.getBio(), user_receive.getAvatar(), user_receive.getQr(), user_receive.isActive());
+    }
+
+    public User getUser_send() {
+        if (this.user_send == null)
+            return null;
+        return new User(user_send.getId(), user_send.getFirstName(), user_send.getLastName(),
+                user_send.getDisplayName(), user_send.getBio(), user_send.getAvatar(), user_send.getQr(), user_send.isActive())
+                ;
+    }
+
     private List<Emotion> list_emotion = new ArrayList<>();
     private List<HistoryChange> historyChanges = new ArrayList<>();
 
-    public Message(String content, String code, String TYPE){
-        this.code =code;
+    public Message(String content, String code, String TYPE) {
+        this.code = code;
         this.content = content;
         this.TYPE = TYPE;
     }

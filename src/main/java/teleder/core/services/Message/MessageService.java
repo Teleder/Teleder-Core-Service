@@ -71,6 +71,9 @@ public class MessageService implements IMessageService {
         message.setUser_receive(contact);
         message.setCode(conservation.getCode());
         message = messageRepository.save(message);
+        conservation = conservationRepository.findByCode(message.getCode());
+        conservation.setLastMessage(message);
+        conservationRepository.save(conservation);
         simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(message, CONSTS.MESSAGE_PRIVATE));
     }
 
@@ -88,12 +91,15 @@ public class MessageService implements IMessageService {
         message.setUser_send(user);
         message.setCode(conservation.getCode());
         message.setGroup(conservation.getGroup());
+        conservation = conservationRepository.findByCode(message.getCode());
+        conservation.setLastMessage(message);
+        conservationRepository.save(conservation);
         simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(message, CONSTS.MESSAGE_GROUP));
     }
 
     @Override
     public CompletableFuture<List<Message>> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content) {
-        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+            String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().contains(code)))
             throw new NotFoundException("Not Found Conservation!");
         List<Message> messages = messageRepository.findMessagesWithPaginationAndSearch(skip, limit, code, content);

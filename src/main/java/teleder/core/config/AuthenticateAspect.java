@@ -28,11 +28,12 @@ public class AuthenticateAspect {
     @Before("@annotation(teleder.core.annotations.Authenticate)")
     public void authenticate(JoinPoint joinPoint) throws UnauthorizedException, NoSuchAlgorithmException, InvalidKeySpecException {
         String token = getTokenFromRequest();
-        if (token == null) {
+        if (token == null || jwtTokenUtil.isTokenExpired(token)) {
             throw new UnauthorizedException("Unauthorized");
         }
         String username = jwtTokenUtil.getUsernameFromToken(token);
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
         if (token != null && jwtTokenUtil.validateToken(token, userDetails)) {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
             request.setAttribute("user", userDetails);

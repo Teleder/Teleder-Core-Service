@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
+import teleder.core.exceptions.BadRequestException;
+import teleder.core.exceptions.UnauthorizedException;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -79,9 +81,17 @@ public class JwtTokenUtil {
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
-    public boolean isTokenExpired(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        Date expirationDate = getExpirationDateFromToken(token);
-        return expirationDate.before(new Date());
+    public boolean isTokenExpired(String token) {
+        try {
+            Date expirationDate = getExpirationDateFromToken(token);
+            return expirationDate.before(new Date());
+        }catch(RuntimeException e){
+            throw new UnauthorizedException(e.getMessage());
+        } catch (NoSuchAlgorithmException e) {
+            throw new UnauthorizedException(e.getMessage());
+        } catch (InvalidKeySpecException e) {
+            throw new UnauthorizedException(e.getMessage());
+        }
     }
 
     public String checkRefreshToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {

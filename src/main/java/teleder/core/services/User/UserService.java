@@ -290,8 +290,12 @@ public class UserService implements IUserService, UserDetailsService {
             simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.DENY_CONTACT));
             return CompletableFuture.completedFuture(false);
         } else {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             Conservation conservation = new Conservation(toDto.map(user, UserConservationDto.class), toDto.map(contact, UserConservationDto.class), null);
             conservation.setCode(UUID.randomUUID().toString());
+            Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
+            mess = messageRepository.save(mess);
+            conservation.setLastMessage(mess);
             conservation = conservationRepository.save(conservation);
             for (Contact f : user.getList_contact()) {
                 if (f.getUser().getId().contains(contact.getId())) {
@@ -309,10 +313,6 @@ public class UserService implements IUserService, UserDetailsService {
                     break;
                 }
             }
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-            Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
-            messageRepository.save(mess);
             simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.ACCEPT_CONTACT));
             return CompletableFuture.completedFuture(true);
         }

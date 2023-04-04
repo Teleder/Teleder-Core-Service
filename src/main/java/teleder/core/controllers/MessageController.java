@@ -40,10 +40,10 @@ public class MessageController {
 
     @Async
     @Authenticate
-    @GetMapping("/apiv/v1/messages/{code}")
+    @GetMapping("/{code}")
     public PagedResultDto<Message> findMessagesWithPaginationAndSearch(@RequestParam(name = "page", defaultValue = "0") int page,
                                                                        @RequestParam(name = "size", defaultValue = "10") int size,
-                                                                       @RequestParam(name = "content", required = false) String content,
+                                                                       @RequestParam(name = "content", defaultValue = "") String content,
                                                                        @PathVariable(name = "code") String code) {
 
         CompletableFuture<Long> total = messageService.countMessagesByCode(code);
