@@ -14,6 +14,12 @@ public class Contact {
         this.status = status;
     }
 
+
+    public User getUser() {
+        return new User(this.user.getId(), this.user.getFirstName(), this.user.getLastName(),
+                this.user.getDisplayName(), this.user.getBio(), this.user.getAvatar(), this.user.getQr());
+    }
+
     public enum Status {
         ACCEPT,
         WAITING,

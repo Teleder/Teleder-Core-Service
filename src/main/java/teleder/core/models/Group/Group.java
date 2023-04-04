@@ -10,10 +10,7 @@ import teleder.core.models.File.File;
 import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Document(collection = "Group")
 @Data
@@ -31,7 +28,7 @@ public class Group extends BaseModel {
     private String id;
     private String code = UUID.randomUUID().toString();
     @DBRef
-    private List<Message> pinMessage;
+    private Set<Message> pinMessage = new HashSet<>();
     @DBRef
     private User user_own;
     @DBRef

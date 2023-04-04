@@ -2,7 +2,6 @@ package teleder.core.models.User;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,6 +10,7 @@ import teleder.core.models.BaseModel;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.File.File;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -27,15 +27,28 @@ public class User extends BaseModel implements UserDetails {
     private String bio;
     @DBRef
     private File avatar;
+    @DBRef
     private File qr;
-    private List<Block> blocks;
+    private List<Block> blocks = new ArrayList<>();
     private String password;
-    private List<Conservation> conservations;
+
+    @DBRef(lazy = true)
+    private List<Conservation> conservations = new ArrayList<>();
+
     private Role role = Role.USER;
-    private List<Contact> list_contact;
+    private List<Contact> list_contact = new ArrayList<>();
     boolean isActive = false;
     public User() {
-        this.firstName = "12";
+        // Hàm tạo không đối số
+    }
+    public User(String id, String firstName, String lastName, String displayName, String bio, File avatar, File qr) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName =lastName;
+        this.displayName = displayName;
+        this.bio = bio;
+        this.avatar = avatar;
+        this.qr = qr;
     }
 
     public String getRole() {

@@ -34,7 +34,7 @@ public interface IUserService extends IMongoService<UserDto, CreateUserDto, Upda
 
     public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(String displayName, long skip, int limit);
 
-    public CompletableFuture<Boolean> respondToRequestForContacts(String contact_id, Boolean accept);
+    public CompletableFuture<Boolean> responseToRequestForContacts(String contact_id, Boolean accept);
 
     public CompletableFuture<List<Contact>> getListContactRequestSend();
 }

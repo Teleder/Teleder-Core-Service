@@ -123,7 +123,7 @@ public class UserController {
     @Authenticate
     @PatchMapping(value = "/respond-to-request-for-contacts", produces = MediaType.APPLICATION_JSON_VALUE)
     public CompletableFuture<Boolean> respondToRequestForContacts(@RequestParam("contactId") String contactId, @RequestParam Boolean accept) {
-        return userService.respondToRequestForContacts(contactId, accept);
+        return userService.responseToRequestForContacts(contactId, accept);
     }
 
     @Authenticate

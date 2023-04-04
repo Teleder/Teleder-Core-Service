@@ -2,6 +2,7 @@ package teleder.core.services.User;
 
 import com.google.zxing.WriterException;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -18,10 +19,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import teleder.core.config.JwtTokenUtil;
-import teleder.core.dtos.ContactInfoDto;
-import teleder.core.dtos.PagedResultDto;
-import teleder.core.dtos.Pagination;
-import teleder.core.dtos.SocketPayload;
+import teleder.core.dtos.*;
+import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.File.File;
@@ -30,6 +29,7 @@ import teleder.core.models.User.Block;
 import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
+import teleder.core.repositories.IFileRepository;
 import teleder.core.repositories.IMessageRepository;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.File.IFileService;
@@ -58,8 +58,10 @@ public class UserService implements IUserService, UserDetailsService {
     final
     IConservationRepository conservationRepository;
     private final ModelMapper toDto;
+    private final IFileRepository iFileRepository;
 
-    public UserService(SimpMessagingTemplate simpMessagingTemplate, IUserRepository userRepository, IFileService fileService, IMessageRepository messageRepository, MongoTemplate mongoTemplate, IConservationRepository conservationRepository, ModelMapper toDto) {
+    public UserService(SimpMessagingTemplate simpMessagingTemplate, IUserRepository userRepository, IFileService fileService, IMessageRepository messageRepository, MongoTemplate mongoTemplate, IConservationRepository conservationRepository, ModelMapper toDto,
+                       IFileRepository iFileRepository) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.userRepository = userRepository;
         this.fileService = fileService;
@@ -67,11 +69,13 @@ public class UserService implements IUserService, UserDetailsService {
         this.mongoTemplate = mongoTemplate;
         this.conservationRepository = conservationRepository;
         this.toDto = toDto;
+        this.iFileRepository = iFileRepository;
     }
 
     @Override
     @Async
     public CompletableFuture<UserDto> create(CreateUserDto input) throws WriterException, IOException, ExecutionException, InterruptedException {
+        toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         User user = toDto.map(input, User.class);
         int width = 300;
         int height = 300;
@@ -94,6 +98,7 @@ public class UserService implements IUserService, UserDetailsService {
         User user = userRepository.findById(id).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user!");
+
         return CompletableFuture.completedFuture(toDto.map(user, UserProfileDto.class));
     }
 
@@ -101,13 +106,15 @@ public class UserService implements IUserService, UserDetailsService {
     @Async
     public CompletableFuture<Boolean> addContact(String contactId) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        if (userId == contactId)
+            throw new BadRequestException("Cannot add friend self");
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<User> contactOptional = userRepository.findById(contactId);
         if (userOptional.isPresent() && contactOptional.isPresent()) {
             User user = userOptional.get();
             User contact = contactOptional.get();
             user.getList_contact().add(new Contact(contact, Contact.Status.WAITING));
-            contact.getList_contact().add(new Contact(contact, Contact.Status.REQUEST));
+            contact.getList_contact().add(new Contact(user, Contact.Status.REQUEST));
             userRepository.save(user);
             userRepository.save(contact);
             simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.MESSAGE_GROUP));
@@ -252,7 +259,7 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     @Override
-    public CompletableFuture<Boolean> respondToRequestForContacts(String contact_id, Boolean accept) {
+    public CompletableFuture<Boolean> responseToRequestForContacts(String contact_id, Boolean accept) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         User contact = userRepository.findById(contact_id).orElse(null);
@@ -283,12 +290,12 @@ public class UserService implements IUserService, UserDetailsService {
             simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.DENY_CONTACT));
             return CompletableFuture.completedFuture(false);
         } else {
-            Conservation conservation = new Conservation(user, contact, null);
+            Conservation conservation = new Conservation(toDto.map(user, UserConservationDto.class), toDto.map(contact, UserConservationDto.class), null);
             conservation.setCode(UUID.randomUUID().toString());
-            conservationRepository.save(conservation);
+            conservation = conservationRepository.save(conservation);
             for (Contact f : user.getList_contact()) {
                 if (f.getUser().getId().contains(contact.getId())) {
-                    friend.setStatus(Contact.Status.ACCEPT);
+                    f.setStatus(Contact.Status.ACCEPT);
                     user.getConservations().add(conservation);
                     userRepository.save(user);
                     break;
@@ -296,7 +303,7 @@ public class UserService implements IUserService, UserDetailsService {
             }
             for (Contact f : contact.getList_contact()) {
                 if (f.getUser().getId().contains(user.getId())) {
-                    friend.setStatus(Contact.Status.ACCEPT);
+                    f.setStatus(Contact.Status.ACCEPT);
                     contact.getConservations().add(conservation);
                     userRepository.save(contact);
                     break;
@@ -399,5 +406,6 @@ public class UserService implements IUserService, UserDetailsService {
             userRepository.save(contact);
         }
     }
+
 
 }

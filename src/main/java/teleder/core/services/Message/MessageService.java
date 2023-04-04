@@ -1,13 +1,14 @@
 package teleder.core.services.Message;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import teleder.core.utils.CONSTS;
 import teleder.core.dtos.SocketPayload;
+import teleder.core.dtos.UserConservationDto;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.Message.Message;
@@ -18,6 +19,7 @@ import teleder.core.repositories.IUserRepository;
 import teleder.core.services.Message.dtos.CreateMessageDto;
 import teleder.core.services.Message.dtos.MessageDto;
 import teleder.core.services.Message.dtos.UpdateMessageDto;
+import teleder.core.utils.CONSTS;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -32,12 +34,14 @@ public class MessageService implements IMessageService {
     IUserRepository userRepository;
     final
     IConservationRepository conservationRepository;
+    private final ModelMapper toDto;
 
-    public MessageService(SimpMessagingTemplate simpMessagingTemplate, IMessageRepository messageRepository, IUserRepository userRepository, IConservationRepository conservationRepository) {
+    public MessageService(SimpMessagingTemplate simpMessagingTemplate, IMessageRepository messageRepository, IUserRepository userRepository, IConservationRepository conservationRepository, ModelMapper toDto) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.conservationRepository = conservationRepository;
+        this.toDto = toDto;
     }
 
 
@@ -53,7 +57,7 @@ public class MessageService implements IMessageService {
                 .filter(x -> x.getUser_1().getId().contains(contactId) || x.getUser_2().getId().contains(contactId))
                 .findFirst().orElse(null);
         if (conservation == null) {
-            conservation = new Conservation(user, message.getUser_receive(), null);
+            conservation = new Conservation(toDto.map(user, UserConservationDto.class), toDto.map(message.getUser_receive(), UserConservationDto.class), null);
             conservation = conservationRepository.save(conservation);
             user.getConservations().add(conservation);
             contact.getConservations().add(conservation);
