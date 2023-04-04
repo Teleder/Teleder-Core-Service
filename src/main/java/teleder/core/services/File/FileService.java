@@ -13,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.File.File;
 import teleder.core.models.File.FileCategory;
-import teleder.core.models.User.User;
 import teleder.core.repositories.IFileRepository;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.File.dtos.CreateFileDto;
@@ -139,7 +138,7 @@ public class FileService implements IFileService {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
 
         Path path = Paths.get(uploadPath.toString(), fileName);
-        if (type== FileCategory.IMAGE) {
+        if (type == FileCategory.IMAGE) {
             byte[] fileData = file.getBytes();
             BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(fileData));
             int newWidth = 1920;
@@ -177,7 +176,7 @@ public class FileService implements IFileService {
         try {
             if (fileName == null || fileName.trim() == "")
                 throw new NotFoundException("Not found file name");
-            java.io.File file = new java.io.File("./uploads/" + fileName);
+            java.io.File file = new java.io.File(uploadPath + "/" + fileName);
             if (file.delete()) {
                 fileRepository.delete(fileRepository.findByName(fileName).orElse(null));
                 return CompletableFuture.completedFuture(null);
