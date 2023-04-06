@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import teleder.core.annotations.ApiPrefixController;
 import teleder.core.config.JwtTokenUtil;
+import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.exceptions.UnauthorizedException;
 import teleder.core.models.User.User;
@@ -51,7 +52,11 @@ public class AuthController {
     public ResponseEntity<?> refreshAuthenticationToken(@RequestBody @Valid RefreshTokenInput refreshTokenRequest) throws Exception {
         final String refreshToken = refreshTokenRequest.getRefreshToken();
         // Check if the refresh token is valid and not expired
-        final User user = userRepository.findById(jwtUtil.getUsernameFromToken(refreshToken)).orElse(null);
+        String id = jwtUtil.checkRefreshToken(refreshToken);
+        if(id == null){
+            throw new BadRequestException("Not type refresh token");
+        }
+        final User user = userRepository.findById(id).orElse(null);
         if (user == null)
             throw new RuntimeException("Cannot find user with email or phone");
         if (jwtUtil.validateToken(refreshToken, user)) {

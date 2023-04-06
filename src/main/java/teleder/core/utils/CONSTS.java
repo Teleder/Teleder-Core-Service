@@ -5,10 +5,24 @@ import lombok.Data;
 @Data
 public class CONSTS {
     // MESSAGE
-    public final static String MESSAGE_PRIVATE = "MESSAGE_PRIVATE";
-    public final static String MESSAGE_GROUP = "=MESSAGE_GROUP";
+    public final static String MESSAGE_PRIVATE = "USER";
+    public final static String MESSAGE_GROUP = "GROUP";
+    public final static String READ_RECEIPT = "read";
+    public final static String DELIVERY_RECEIPT = "delivery";
     public final static String CHATTING = "=CHATTING";
     public final static String CALL = "CALL";
+    public final static String IMAGE = "IMAGE";
+    public final static String AUDIO = "AUDIO";
+    public final static String FILE = "FILE";
+    public final static String CUSTOM = "CUSTOM";
+    public final static String CALL_TYPE_VIDEO = "CALL_TYPE.VIDEO";
+    public final static String CALL_TYPE_AUDIO = "CALL_TYPE.AUDIO";
+    public final static String CATEGORY_MESSAGE = "CATEGORY_MESSAGE";
+    public final static String CATEGORY_ACTION = "CATEGORY_ACTION";
+    public final static String CATEGORY_CALL = "CATEGORY_CALL";
+    public final static String DIRECT_CALL = "DIRECT_CALL";
+    public final static String STICKER = "extension_sticker";
+
     // CONTACT
     public final static String BLOCK_CONTACT = "BLOCK_CONTACT";
     public final static String ADD_CONTACT = "ADD_CONTACT";

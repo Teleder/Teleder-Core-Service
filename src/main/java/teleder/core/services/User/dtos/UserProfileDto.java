@@ -2,6 +2,7 @@ package teleder.core.services.User.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.joda.time.DateTime;
 import teleder.core.dtos.ConservationDto;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.File.File;
@@ -9,6 +10,7 @@ import teleder.core.models.User.Block;
 import teleder.core.models.User.User;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -37,4 +39,6 @@ public class UserProfileDto {
     private List<Conservation> conservations = new ArrayList<>();
     @JsonProperty(value = "role")
     private User.Role role;
+    @JsonProperty(value = "lastActiveAt")
+    private Date lastActiveAt;
 }

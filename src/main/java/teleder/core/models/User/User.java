@@ -1,6 +1,7 @@
 package teleder.core.models.User;
 
 import lombok.Data;
+import org.joda.time.DateTime;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -12,6 +13,7 @@ import teleder.core.models.File.File;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 @Document(collection = "User")
@@ -38,10 +40,11 @@ public class User extends BaseModel implements UserDetails {
     private Role role = Role.USER;
     private List<Contact> list_contact = new ArrayList<>();
    public boolean isActive = false;
+    Date lastActiveAt = new Date();
     public User() {
         // Hàm tạo không đối số
     }
-    public User(String id, String firstName, String lastName, String displayName, String bio, File avatar, File qr, Boolean isActive) {
+    public User(String id, String firstName, String lastName, String displayName, String bio, File avatar, File qr, Boolean isActive, Date lastActiveAt ) {
         this.id = id;
         this.firstName = firstName;
         this.lastName =lastName;
@@ -50,6 +53,7 @@ public class User extends BaseModel implements UserDetails {
         this.avatar = avatar;
         this.qr = qr;
         this.isActive = isActive;
+        this.lastActiveAt = lastActiveAt;
     }
 
     public String getRole() {

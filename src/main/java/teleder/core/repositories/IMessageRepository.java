@@ -24,4 +24,7 @@ public interface IMessageRepository extends MongoRepository<Message, String> {
     })
     Optional<Long> countMessagesByCode(String code);
 
+
+    Optional<Message> findByCode(String code);
+
 }

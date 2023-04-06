@@ -2,6 +2,7 @@ package teleder.core.models.Message;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.joda.time.DateTime;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -28,20 +29,26 @@ public class Message extends BaseModel {
     @DBRef
     private User user_receive;
     @DBRef
+    String parentMessageId;
+    @DBRef
     private Group group;
+    DateTime readAt;
+    DateTime deliveredAt;
+    String receiptType;
+
 
     public User getUser_receive() {
         if (this.user_receive == null)
             return null;
         return new User(user_receive.getId(), user_receive.getFirstName(), user_receive.getLastName(),
-                user_receive.getDisplayName(), user_receive.getBio(), user_receive.getAvatar(), user_receive.getQr(), user_receive.isActive());
+                user_receive.getDisplayName(), user_receive.getBio(), user_receive.getAvatar(), user_receive.getQr(), user_receive.isActive(), user_receive.getLastActiveAt());
     }
 
     public User getUser_send() {
         if (this.user_send == null)
             return null;
         return new User(user_send.getId(), user_send.getFirstName(), user_send.getLastName(),
-                user_send.getDisplayName(), user_send.getBio(), user_send.getAvatar(), user_send.getQr(), user_send.isActive())
+                user_send.getDisplayName(), user_send.getBio(), user_send.getAvatar(), user_send.getQr(), user_send.isActive(), user_send.getLastActiveAt())
                 ;
     }
 

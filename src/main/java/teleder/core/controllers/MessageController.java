@@ -5,10 +5,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import teleder.core.annotations.ApiPrefixController;
 import teleder.core.annotations.Authenticate;
 import teleder.core.dtos.PagedResultDto;
@@ -56,6 +53,38 @@ public class MessageController {
             e.printStackTrace();
         }
         throw new RuntimeException("Some thing went wrong!");
+    }
+
+    @Async
+    @Authenticate
+    @GetMapping("/message-by-code-paginate/{code}")
+    public PagedResultDto<Message> findMessagesWithPaginationAndSearch(@RequestParam(name = "limit", defaultValue = "30") int limit,
+                                                                       @RequestParam(name = "content", defaultValue = "") String content,
+                                                                       @PathVariable(name = "code") String code) {
+
+        CompletableFuture<Long> total = messageService.countMessagesByCode(code);
+        CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(0, limit, code, content);
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, messages);
+        try {
+            allFutures.get();
+            return PagedResultDto.create(Pagination.create(total.get(), 0 , limit), messages.get());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException("Some thing went wrong!");
+    }
+
+    @Async
+    @Authenticate
+    @PatchMapping("/mark-as-read/{code}")
+    public void markAsRead(@PathVariable(name = "code") String code) {
+        messageService.markAsRead(code);
+    }
+    @Async
+    @Authenticate
+    @PatchMapping("/mark-as-delivered/{code}")
+    public void markAsDelivered(@PathVariable(name = "code") String code) {
+        messageService.markAsDelivered(code);
     }
 
 }

@@ -11,7 +11,7 @@ import java.util.List;
 public class ConservationDto {
     private String id;
     private String code;
-    private Conservation.Type type;
+    private String type;
     private List<Conservation.PinMessage> pinMessage;
     private UserProfileDto user_1;
     private UserProfileDto user_2;

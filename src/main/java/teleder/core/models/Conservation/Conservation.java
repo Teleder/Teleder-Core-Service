@@ -11,6 +11,7 @@ import teleder.core.models.BaseModel;
 import teleder.core.models.Group.Group;
 import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
+import teleder.core.utils.CONSTS;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,18 +24,30 @@ public class Conservation extends BaseModel {
     @Id
     private String id;
     private String code = UUID.randomUUID().toString();
-    private Type type = Type.PERSONAL;
+    private String type = CONSTS.MESSAGE_PRIVATE;
     private List<PinMessage> pinMessage = new ArrayList<>();
     @DBRef
     Message lastMessage;
-    private UserConservationDto user_1;
-    private UserConservationDto user_2;
+    @DBRef
+    private User user_1;
+    @DBRef
+    private User user_2;
     @DBRef
     private Group group;
-    public Conservation(UserConservationDto user_1, UserConservationDto user_2, Group group) {
+    public Conservation(User user_1, User user_2, Group group) {
         this.user_2 = user_2;
         this.user_1 = user_1;
         this.group = group;
+    }
+
+    public User getUser_1() {
+        return new User(this.user_1.getId(), this.user_1.getFirstName(), this.user_1.getLastName(),
+                this.user_1.getDisplayName(), this.user_1.getBio(), this.user_1.getAvatar(), this.user_1.getQr(), this.user_1.isActive(), this.user_1.getLastActiveAt());
+    }
+
+    public User getUser_2() {
+        return new User(this.user_2.getId(), this.user_2.getFirstName(), this.user_2.getLastName(),
+                this.user_2.getDisplayName(), this.user_2.getBio(), this.user_2.getAvatar(), this.user_2.getQr(), this.user_2.isActive(), this.user_2.getLastActiveAt());
     }
 
     public Group getGroup() {
@@ -44,14 +57,12 @@ public class Conservation extends BaseModel {
     public Conservation(Group group, String code) {
         this.group = group;
         this.code = code;
+        this.type= CONSTS.MESSAGE_GROUP;
     }
     public Conservation() {
     }
 
-    public enum Type {
-        PERSONAL,
-        GROUP
-    }
+
 
     @Data
     public class PinMessage {

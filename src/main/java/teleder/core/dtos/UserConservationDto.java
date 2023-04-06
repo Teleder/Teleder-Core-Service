@@ -2,11 +2,9 @@ package teleder.core.dtos;
 
 import lombok.Data;
 import teleder.core.models.File.File;
-import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 @Data
 public class UserConservationDto {
@@ -16,5 +14,6 @@ public class UserConservationDto {
     private File avatar;
     private File qr;
     private User.Role role;
-    private List<Contact> list_contact = new ArrayList<>();
+    public boolean isActive;
+    Date lastActiveAt;
 }

@@ -19,7 +19,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import teleder.core.config.JwtTokenUtil;
-import teleder.core.dtos.*;
+import teleder.core.dtos.ContactInfoDto;
+import teleder.core.dtos.PagedResultDto;
+import teleder.core.dtos.Pagination;
+import teleder.core.dtos.SocketPayload;
 import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
@@ -291,7 +294,7 @@ public class UserService implements IUserService, UserDetailsService {
             return CompletableFuture.completedFuture(false);
         } else {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            Conservation conservation = new Conservation(toDto.map(user, UserConservationDto.class), toDto.map(contact, UserConservationDto.class), null);
+            Conservation conservation = new Conservation(user, contact, null);
             conservation.setCode(UUID.randomUUID().toString());
             Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
             mess = messageRepository.save(mess);

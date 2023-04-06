@@ -19,7 +19,7 @@ cloudinary:
 jwt:
 #    nho xoa 1 so 0 sau khi code xong :)))
     access-token-expiration: 18000000
-    refresh-token-expiration: 86400000
+    refresh-token-expiration: 864000000
     secret: W1vmiY6pBqp6#i!ly^EgP!n9aWcn9yv&A*1r@c%2Cz8lAuW
     public-key: |
         -----BEGIN PUBLIC KEY-----

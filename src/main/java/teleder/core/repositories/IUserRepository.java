@@ -15,5 +15,6 @@ public interface IUserRepository extends MongoRepository<User, String> {
     @Query("{ $or: [ { 'email': ?0 }, { 'phone': ?0 }, { 'bio': ?0 } ] }")
     List<User> findContact(String input);
 
-    Optional<User> findById(String id);
+//    @Query("{'id': ?0}")
+//    Optional<User> findById(String id);
 }

@@ -17,7 +17,7 @@ public class Contact {
 
     public User getUser() {
         return new User(this.user.getId(), this.user.getFirstName(), this.user.getLastName(),
-                this.user.getDisplayName(), this.user.getBio(), this.user.getAvatar(), this.user.getQr(), this.user.isActive());
+                this.user.getDisplayName(), this.user.getBio(), this.user.getAvatar(), this.user.getQr(), this.user.isActive(), this.user.getLastActiveAt());
     }
 
     public enum Status {

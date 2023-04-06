@@ -1,5 +1,6 @@
 package teleder.core.services.Message;
 
+import org.joda.time.DateTime;
 import org.modelmapper.ModelMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -8,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.dtos.SocketPayload;
-import teleder.core.dtos.UserConservationDto;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.Message.Message;
@@ -57,7 +57,7 @@ public class MessageService implements IMessageService {
                 .filter(x -> x.getUser_1().getId().contains(contactId) || x.getUser_2().getId().contains(contactId))
                 .findFirst().orElse(null);
         if (conservation == null) {
-            conservation = new Conservation(toDto.map(user, UserConservationDto.class), toDto.map(message.getUser_receive(), UserConservationDto.class), null);
+            conservation = new Conservation(user, message.getUser_receive(), null);
             conservation = conservationRepository.save(conservation);
             user.getConservations().add(conservation);
             contact.getConservations().add(conservation);
@@ -99,7 +99,7 @@ public class MessageService implements IMessageService {
 
     @Override
     public CompletableFuture<List<Message>> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content) {
-            String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().contains(code)))
             throw new NotFoundException("Not Found Conservation!");
         List<Message> messages = messageRepository.findMessagesWithPaginationAndSearch(skip, limit, code, content);
@@ -109,6 +109,26 @@ public class MessageService implements IMessageService {
     @Override
     public CompletableFuture<Long> countMessagesByCode(String code) {
         return CompletableFuture.supplyAsync(() -> messageRepository.countMessagesByCode(code).orElse(0L));
+    }
+
+    @Override
+    public CompletableFuture<Message> markAsDelivered(String code) {
+        Message message = messageRepository.findByCode(code).orElse(null);
+        if (message == null)
+            throw new NotFoundException("Not Found Message!");
+        message.setDeliveredAt(new DateTime());
+        message = messageRepository.save(message);
+        return CompletableFuture.completedFuture(message);
+    }
+
+    @Override
+    public CompletableFuture<Message> markAsRead(String code) {
+        Message message = messageRepository.findByCode(code).orElse(null);
+        if (message == null)
+            throw new NotFoundException("Not Found Message!");
+        message.setReadAt(new DateTime());
+        message = messageRepository.save(message);
+        return CompletableFuture.completedFuture(message);
     }
 
     /// Basic CRUD
