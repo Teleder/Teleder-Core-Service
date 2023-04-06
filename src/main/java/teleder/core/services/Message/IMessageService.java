@@ -1,5 +1,6 @@
 package teleder.core.services.Message;
 
+import teleder.core.dtos.PayloadMessage;
 import teleder.core.models.Message.Message;
 import teleder.core.services.IMongoService;
 import teleder.core.services.Message.dtos.CreateMessageDto;
@@ -10,9 +11,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface IMessageService extends IMongoService<MessageDto, CreateMessageDto, UpdateMessageDto> {
-    public void sendPrivateMessage(String contactId, Message message);
+    public CompletableFuture<Message> sendPrivateMessage(String contactId, PayloadMessage message);
 
-    public void sendGroupMessage(String groupId, Message message);
+    public CompletableFuture<Message> sendGroupMessage(String groupId, PayloadMessage message);
 
     CompletableFuture<List<Message>> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content);
 

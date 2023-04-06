@@ -10,6 +10,7 @@ import teleder.core.annotations.ApiPrefixController;
 import teleder.core.annotations.Authenticate;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.dtos.Pagination;
+import teleder.core.dtos.PayloadMessage;
 import teleder.core.models.Message.Message;
 import teleder.core.services.Message.IMessageService;
 
@@ -24,15 +25,15 @@ public class MessageController {
     IMessageService messageService;
 
     @Authenticate
-    @MessageMapping("/privateMessage/{recipientId}")
-    public void sendPrivateMessage(@DestinationVariable("recipientId") String recipientId,Message message) {
-        messageService.sendPrivateMessage(recipientId, message);
+    @PostMapping("/privateMessage/{recipientId}")
+    public  CompletableFuture<Message> sendPrivateMessage(@PathVariable("recipientId") String recipientId,@RequestBody PayloadMessage message) {
+        return messageService.sendPrivateMessage(recipientId, message);
     }
 
     @Authenticate
-    @MessageMapping("/groupMessage/{groupId}")
-    public void sendGroupMessage(@DestinationVariable("groupId") String groupId, @Payload Message message) {
-        messageService.sendGroupMessage(groupId, message);
+    @PostMapping("/groupMessage/{groupId}")
+    public  CompletableFuture<Message> sendGroupMessage(@PathVariable("groupId") String groupId, @RequestBody PayloadMessage message) {
+        return messageService.sendGroupMessage(groupId, message);
     }
 
     @Async

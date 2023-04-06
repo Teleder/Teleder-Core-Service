@@ -2,7 +2,6 @@ package teleder.core.models.Message;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.joda.time.DateTime;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -11,11 +10,12 @@ import teleder.core.models.Group.Group;
 import teleder.core.models.User.User;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Document(collection = "Message")
 @Data
-public class Message extends BaseModel {
+public class Message extends BaseModel implements Comparable<Message> {
     @Id
     private String id;
     @NonNull
@@ -29,13 +29,16 @@ public class Message extends BaseModel {
     @DBRef
     private User user_receive;
     @DBRef
-    String parentMessageId;
+    Message parentMessageId;
     @DBRef
     private Group group;
-    DateTime readAt;
-    DateTime deliveredAt;
+    Date readAt = new Date();
+    Date deliveredAt = new Date();
     String receiptType;
 
+
+    public Message() {
+    }
 
     public User getUser_receive() {
         if (this.user_receive == null)
@@ -61,4 +64,26 @@ public class Message extends BaseModel {
         this.TYPE = TYPE;
     }
 
+    public Message(String content, String code, String TYPE, User user_send, User user_receive, Message parentMessageId) {
+        this.code = code;
+        this.content = content;
+        this.TYPE = TYPE;
+        this.user_send = user_send;
+        this.user_receive = user_receive;
+        this.parentMessageId = parentMessageId;
+    }
+
+    public Message(String content, String code, String TYPE, User user_send, Group group, Message parentMessageId) {
+        this.code = code;
+        this.content = content;
+        this.TYPE = TYPE;
+        this.user_send = user_send;
+        this.user_receive = user_receive;
+        this.parentMessageId = parentMessageId;
+    }
+
+    @Override
+    public int compareTo(Message o) {
+       return this.getCreateAt().compareTo(o.getCreateAt());
+    }
 }

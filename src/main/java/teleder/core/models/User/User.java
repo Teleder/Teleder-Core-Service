@@ -34,7 +34,7 @@ public class User extends BaseModel implements UserDetails {
     private List<Block> blocks = new ArrayList<>();
     private String password;
 
-    @DBRef(lazy = true)
+    @DBRef()
     private List<Conservation> conservations = new ArrayList<>();
 
     private Role role = Role.USER;
