@@ -1,5 +1,6 @@
 package teleder.core.services.Message;
 
+import teleder.core.dtos.PayloadAction;
 import teleder.core.dtos.PayloadMessage;
 import teleder.core.models.Message.Message;
 import teleder.core.services.IMongoService;
@@ -20,4 +21,5 @@ public interface IMessageService extends IMongoService<MessageDto, CreateMessage
     CompletableFuture<Long> countMessagesByCode(String code);
     CompletableFuture<Message> markAsDelivered(String code);
     CompletableFuture<Message> markAsRead(String code);
+    public CompletableFuture<Void> sendAction( PayloadAction input);
 }

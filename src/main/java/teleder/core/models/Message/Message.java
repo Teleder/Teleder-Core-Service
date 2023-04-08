@@ -32,8 +32,8 @@ public class Message extends BaseModel implements Comparable<Message> {
     Message parentMessageId;
     @DBRef
     private Group group;
-    Date readAt = new Date();
-    Date deliveredAt = new Date();
+    Date readAt = null;
+    Date deliveredAt =null;
     String receiptType;
 
 

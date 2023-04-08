@@ -1,6 +1,5 @@
 package teleder.core.services.Message;
 
-import org.joda.time.DateTime;
 import org.modelmapper.ModelMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -8,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import teleder.core.dtos.PayloadAction;
 import teleder.core.dtos.PayloadMessage;
 import teleder.core.dtos.SocketPayload;
 import teleder.core.exceptions.NotFoundException;
@@ -24,7 +24,9 @@ import teleder.core.services.Message.dtos.MessageDto;
 import teleder.core.services.Message.dtos.UpdateMessageDto;
 import teleder.core.utils.CONSTS;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -89,6 +91,22 @@ public class MessageService implements IMessageService {
 
     @Async
     @Override
+    public CompletableFuture<Void> sendAction(PayloadAction input) {
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        // check conservation da tao hay chua neu chua tao thi tao moi
+        User user = userRepository.findById(userId).orElse(null);
+        User contact = userRepository.findById(input.getReceiverId()).orElse(null);
+        if (user == null || contact == null)
+            throw new NotFoundException("Not found user");
+        if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+            simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+        else
+            simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Async
+    @Override
     public CompletableFuture<Message> sendGroupMessage(String groupId, PayloadMessage messagePayload) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
@@ -119,7 +137,7 @@ public class MessageService implements IMessageService {
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().contains(code)))
             throw new NotFoundException("Not Found Conservation!");
         List<Message> messages = messageRepository.findMessagesWithPaginationAndSearch(skip, limit, code, content);
-        messages =  messages.stream()
+        messages = messages.stream()
                 .sorted(Comparator.comparing(Message::getCreateAt))
                 .collect(Collectors.toList());
         return CompletableFuture.completedFuture(messages);

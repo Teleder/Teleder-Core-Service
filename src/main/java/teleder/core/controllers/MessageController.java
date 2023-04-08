@@ -10,6 +10,7 @@ import teleder.core.annotations.ApiPrefixController;
 import teleder.core.annotations.Authenticate;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.dtos.Pagination;
+import teleder.core.dtos.PayloadAction;
 import teleder.core.dtos.PayloadMessage;
 import teleder.core.models.Message.Message;
 import teleder.core.services.Message.IMessageService;
@@ -29,7 +30,11 @@ public class MessageController {
     public  CompletableFuture<Message> sendPrivateMessage(@PathVariable("recipientId") String recipientId,@RequestBody PayloadMessage message) {
         return messageService.sendPrivateMessage(recipientId, message);
     }
-
+    @Authenticate
+    @PostMapping("/sendAction")
+    public CompletableFuture<Void> sendAction(@RequestBody  PayloadAction input) {
+        return messageService.sendAction(input);
+    }
     @Authenticate
     @PostMapping("/groupMessage/{groupId}")
     public  CompletableFuture<Message> sendGroupMessage(@PathVariable("groupId") String groupId, @RequestBody PayloadMessage message) {
