@@ -1,6 +1,5 @@
 package teleder.core.config;
 
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +18,7 @@ import teleder.core.models.User.User;
 import teleder.core.repositories.IUserRepository;
 
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,8 +36,15 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String userId =
-                (((Map<String, List<String>>) MessageHeaderAccessor.getAccessor(((Message<?>) headerAccessor.getHeader("simpConnectMessage")), StompHeaderAccessor.class).getHeader("nativeHeaders")).entrySet().iterator().next().getValue()).toString().replaceAll("\\[|\\]", "");
+        String userId = null;
+//                (((Map<String, List<String>>) MessageHeaderAccessor.getAccessor(((Message<?>) headerAccessor.getHeader("simpConnectMessage")), StompHeaderAccessor.class).getHeader("nativeHeaders")).entrySet().iterator().next().getValue()).toString().replaceAll("\\[|\\]", "");
+        for (Iterator<Map.Entry<String, List<String>>> it = (((Map<String, List<String>>) MessageHeaderAccessor.getAccessor(((Message<?>) headerAccessor.getHeader("simpConnectMessage")), StompHeaderAccessor.class).getHeader("nativeHeaders")).entrySet().iterator()); it.hasNext(); ) {
+            Map.Entry<String, List<String>> header = it.next();
+            if (header.getKey().equals("user-id")) {
+                userId = header.getValue().toString().replaceAll("\\[|\\]", "");
+                break;
+            }
+        }
 
         if (userId == null)
             throw new NotFoundException("Not Found User");

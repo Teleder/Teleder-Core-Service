@@ -5,7 +5,10 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.annotations.ApiPrefixController;
 import teleder.core.annotations.Authenticate;
 import teleder.core.dtos.PagedResultDto;
@@ -64,12 +67,13 @@ public class MessageController {
     @Async
     @Authenticate
     @GetMapping("/message-by-code-paginate/{code}")
-    public PagedResultDto<Message> findMessagesWithPaginationAndSearch(@RequestParam(name = "limit", defaultValue = "30") int limit,
+    public PagedResultDto<Message> findMessagesByCodePaginate( @RequestParam(name = "skip", defaultValue = "0") int skip,
+                                                                        @RequestParam(name = "limit", defaultValue = "30") int limit,
                                                                        @RequestParam(name = "content", defaultValue = "") String content,
                                                                        @PathVariable(name = "code") String code) {
 
         CompletableFuture<Long> total = messageService.countMessagesByCode(code);
-        CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(0, limit, code, content);
+        CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(skip, limit, code, content);
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, messages);
         try {
             allFutures.get();

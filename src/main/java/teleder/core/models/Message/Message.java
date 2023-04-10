@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import teleder.core.models.BaseModel;
+import teleder.core.models.File.File;
 import teleder.core.models.Group.Group;
 import teleder.core.models.User.User;
 
@@ -32,9 +33,10 @@ public class Message extends BaseModel implements Comparable<Message> {
     Message parentMessageId;
     @DBRef
     private Group group;
+    @DBRef
+    private File file;
     Date readAt = null;
     Date deliveredAt =null;
-    String receiptType;
 
 
     public Message() {
@@ -64,22 +66,24 @@ public class Message extends BaseModel implements Comparable<Message> {
         this.TYPE = TYPE;
     }
 
-    public Message(String content, String code, String TYPE, User user_send, User user_receive, Message parentMessageId) {
+    public Message(String content, String code, String TYPE, User user_send, User user_receive, Message parentMessageId, File file) {
         this.code = code;
         this.content = content;
         this.TYPE = TYPE;
         this.user_send = user_send;
         this.user_receive = user_receive;
         this.parentMessageId = parentMessageId;
+        this.file = file;
     }
 
-    public Message(String content, String code, String TYPE, User user_send, Group group, Message parentMessageId) {
+    public Message(String content, String code, String TYPE, User user_send, Group group, Message parentMessageId, File file) {
         this.code = code;
         this.content = content;
         this.TYPE = TYPE;
         this.user_send = user_send;
-        this.user_receive = user_receive;
+        this.group = group;
         this.parentMessageId = parentMessageId;
+        this.file = file;
     }
 
     @Override

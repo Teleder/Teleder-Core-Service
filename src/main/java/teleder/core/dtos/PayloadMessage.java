@@ -1,15 +1,15 @@
 package teleder.core.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.NonNull;
-import org.springframework.data.mongodb.core.mapping.DBRef;
-import teleder.core.models.User.User;
+import teleder.core.models.File.File;
 
 @Data
 public class PayloadMessage {
     private String content;
     private String code;
-    private String TYPE;
+    private String type;
     private String parentMessageId;
     private String group;
+    private File file = null;
 }

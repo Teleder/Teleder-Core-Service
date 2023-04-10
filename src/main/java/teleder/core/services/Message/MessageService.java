@@ -60,7 +60,7 @@ public class MessageService implements IMessageService {
         // check conservation da tao hay chua neu chua tao thi tao moi
         User user = userRepository.findById(userId).orElse(null);
         User contact = userRepository.findById(contactId).orElse(null);
-        Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getTYPE(), user, contact, null);
+        Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getType(), user, contact, null, messagePayload.getFile());
         if (user == null || contact == null)
             throw new NotFoundException("Not found user");
         Conservation conservation = user.getConservations().stream()
@@ -80,7 +80,6 @@ public class MessageService implements IMessageService {
         message.setUser_send(user);
         message.setUser_receive(contact);
         message.setCode(conservation.getCode());
-        message.setTYPE(CONSTS.MESSAGE_PRIVATE);
         message = messageRepository.save(message);
         conservation = conservationRepository.findByCode(message.getCode());
         conservation.setLastMessage(message);
@@ -118,7 +117,7 @@ public class MessageService implements IMessageService {
             throw new NotFoundException("Not found user");
         if (conservation == null)
             throw new NotFoundException("Not found Conservation");
-        Message message = new Message(messagePayload.getCode(), messagePayload.getContent(), messagePayload.getTYPE(), user, group, null);
+        Message message = new Message(messagePayload.getCode(), messagePayload.getContent(), messagePayload.getType(), user, group, null, messagePayload.getFile());
         message.setUser_send(user);
         message.setCode(conservation.getCode());
         message.setGroup(conservation.getGroup());
