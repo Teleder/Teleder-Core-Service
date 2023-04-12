@@ -3,6 +3,7 @@ package teleder.core.dtos;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import teleder.core.models.File.File;
+import teleder.core.models.Message.Message;
 
 @Data
 public class PayloadMessage {

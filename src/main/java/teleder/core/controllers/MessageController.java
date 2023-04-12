@@ -1,14 +1,8 @@
 package teleder.core.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.annotations.ApiPrefixController;
 import teleder.core.annotations.Authenticate;
 import teleder.core.dtos.PagedResultDto;
@@ -17,6 +11,7 @@ import teleder.core.dtos.PayloadAction;
 import teleder.core.dtos.PayloadMessage;
 import teleder.core.models.Message.Message;
 import teleder.core.services.Message.IMessageService;
+import teleder.core.utils.CONSTS;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -30,17 +25,19 @@ public class MessageController {
 
     @Authenticate
     @PostMapping("/privateMessage/{recipientId}")
-    public  CompletableFuture<Message> sendPrivateMessage(@PathVariable("recipientId") String recipientId,@RequestBody PayloadMessage message) {
+    public CompletableFuture<Message> sendPrivateMessage(@PathVariable("recipientId") String recipientId, @RequestBody PayloadMessage message) {
         return messageService.sendPrivateMessage(recipientId, message);
     }
+
     @Authenticate
     @PostMapping("/sendAction")
-    public CompletableFuture<Void> sendAction(@RequestBody  PayloadAction input) {
-        return messageService.sendAction(input);
+    public CompletableFuture<Object> sendAction(@RequestBody PayloadAction input) {
+            return messageService.sendAction(input);
     }
+
     @Authenticate
     @PostMapping("/groupMessage/{groupId}")
-    public  CompletableFuture<Message> sendGroupMessage(@PathVariable("groupId") String groupId, @RequestBody PayloadMessage message) {
+    public CompletableFuture<Message> sendGroupMessage(@PathVariable("groupId") String groupId, @RequestBody PayloadMessage message) {
         return messageService.sendGroupMessage(groupId, message);
     }
 
@@ -67,17 +64,17 @@ public class MessageController {
     @Async
     @Authenticate
     @GetMapping("/message-by-code-paginate/{code}")
-    public PagedResultDto<Message> findMessagesByCodePaginate( @RequestParam(name = "skip", defaultValue = "0") int skip,
-                                                                        @RequestParam(name = "limit", defaultValue = "30") int limit,
-                                                                       @RequestParam(name = "content", defaultValue = "") String content,
-                                                                       @PathVariable(name = "code") String code) {
+    public PagedResultDto<Message> findMessagesByCodePaginate(@RequestParam(name = "skip", defaultValue = "0") int skip,
+                                                              @RequestParam(name = "limit", defaultValue = "30") int limit,
+                                                              @RequestParam(name = "content", defaultValue = "") String content,
+                                                              @PathVariable(name = "code") String code) {
 
         CompletableFuture<Long> total = messageService.countMessagesByCode(code);
         CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(skip, limit, code, content);
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, messages);
         try {
             allFutures.get();
-            return PagedResultDto.create(Pagination.create(total.get(), 0 , limit), messages.get());
+            return PagedResultDto.create(Pagination.create(total.get(), 0, limit), messages.get());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -90,6 +87,7 @@ public class MessageController {
     public void markAsRead(@PathVariable(name = "code") String code) {
         messageService.markAsRead(code);
     }
+
     @Async
     @Authenticate
     @PatchMapping("/mark-as-delivered/{code}")

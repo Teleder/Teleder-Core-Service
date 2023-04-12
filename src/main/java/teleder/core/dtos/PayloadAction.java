@@ -1,6 +1,7 @@
 package teleder.core.dtos;
 
 import lombok.Data;
+import teleder.core.models.Message.Message;
 
 @Data
 public class PayloadAction {
@@ -9,4 +10,8 @@ public class PayloadAction {
     String receiverType;
     String typingMetadata;
     String code;
+    String msgId;
+    String emoji;
+    Message message;
+    String messageText;
 }

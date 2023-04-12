@@ -21,5 +21,5 @@ public interface IMessageService extends IMongoService<MessageDto, CreateMessage
     CompletableFuture<Long> countMessagesByCode(String code);
     CompletableFuture<Message> markAsDelivered(String code);
     CompletableFuture<Message> markAsRead(String code);
-    public CompletableFuture<Void> sendAction( PayloadAction input);
+    public CompletableFuture<Object> sendAction( PayloadAction input);
 }

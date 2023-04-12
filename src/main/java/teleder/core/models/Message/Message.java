@@ -38,10 +38,10 @@ public class Message extends BaseModel implements Comparable<Message> {
     Date readAt = null;
     Date deliveredAt =null;
 
-
+    private List<Emotion> list_emotion = new ArrayList<>();
+    private List<HistoryChange> historyChanges = new ArrayList<>();
     public Message() {
     }
-
     public User getUser_receive() {
         if (this.user_receive == null)
             return null;
@@ -56,9 +56,6 @@ public class Message extends BaseModel implements Comparable<Message> {
                 user_send.getDisplayName(), user_send.getBio(), user_send.getAvatar(), user_send.getQr(), user_send.isActive(), user_send.getLastActiveAt())
                 ;
     }
-
-    private List<Emotion> list_emotion = new ArrayList<>();
-    private List<HistoryChange> historyChanges = new ArrayList<>();
 
     public Message(String content, String code, String TYPE) {
         this.code = code;

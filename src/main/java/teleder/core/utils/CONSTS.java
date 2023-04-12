@@ -9,7 +9,11 @@ public class CONSTS {
     public final static String MESSAGE_GROUP = "GROUP";
     public final static String READ_RECEIPT = "read";
     public final static String DELIVERY_RECEIPT = "delivery";
-    public final static String CHATTING = "=CHATTING";
+    public final static String CHATTING = "CHATTING";
+    public final static String STOP_CHATTING = "STOP_CHATTING";
+    public final static String EMOJI = "EMOJI";
+    public final static String EDIT_MESSAGE = "EDIT_MESSAGE";
+
     public final static String CALL = "CALL";
     public final static String IMAGE = "IMAGE";
     public final static String AUDIO = "AUDIO";
@@ -22,7 +26,7 @@ public class CONSTS {
     public final static String CATEGORY_CALL = "CATEGORY_CALL";
     public final static String DIRECT_CALL = "DIRECT_CALL";
     public final static String STICKER = "extension_sticker";
-
+    public final static String NEW_REACTION = "NEW_REACTION";
     // CONTACT
     public final static String BLOCK_CONTACT = "BLOCK_CONTACT";
     public final static String ADD_CONTACT = "ADD_CONTACT";

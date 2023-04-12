@@ -13,6 +13,7 @@ import teleder.core.dtos.SocketPayload;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.Group.Group;
+import teleder.core.models.Message.Emotion;
 import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
@@ -90,17 +91,56 @@ public class MessageService implements IMessageService {
 
     @Async
     @Override
-    public CompletableFuture<Void> sendAction(PayloadAction input) {
+    public CompletableFuture<Object> sendAction(PayloadAction input) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        // check conservation da tao hay chua neu chua tao thi tao moi
         User user = userRepository.findById(userId).orElse(null);
-        User contact = userRepository.findById(input.getReceiverId()).orElse(null);
-        if (user == null || contact == null)
+        if (user == null)
             throw new NotFoundException("Not found user");
-        if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
-            simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
-        else
-            simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+        switch (input.getAction()) {
+            case CONSTS.CHATTING:
+            case CONSTS.STOP_CHATTING: {
+                User contact = userRepository.findById(input.getReceiverId()).orElse(null);
+                if (contact == null)
+                    throw new NotFoundException("Not found user");
+                if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+                    simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                else
+                    simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                return CompletableFuture.completedFuture(null);
+            }
+            case CONSTS.EMOJI: {
+                Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
+                if (mess == null)
+                    throw new NotFoundException("Not found message");
+                mess.getList_emotion().add(new Emotion(user, input.getEmoji()));
+                mess = messageRepository.save(mess);
+                if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+                    simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                else
+                    simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                return CompletableFuture.completedFuture(mess);
+            }
+            case CONSTS.NEW_REACTION: {
+                if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+                    simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                else
+                    simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                return CompletableFuture.completedFuture(null);
+            }
+            case CONSTS.EDIT_MESSAGE:{
+                Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
+                if (mess == null)
+                    throw new NotFoundException("Not found message");
+                mess.setContent(input.getMessageText());
+                mess = messageRepository.save(mess);
+                input.setMessage(mess);
+                if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+                    simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                else
+                    simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                return CompletableFuture.completedFuture(mess);
+            }
+        }
         return CompletableFuture.completedFuture(null);
     }
 
