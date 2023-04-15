@@ -18,8 +18,13 @@ public interface IMessageService extends IMongoService<MessageDto, CreateMessage
 
     CompletableFuture<List<Message>> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content);
 
-    CompletableFuture<Long> countMessagesByCode(String code);
+    public CompletableFuture<Long> countMessagesByCode(String code, String content);
+
     CompletableFuture<Message> markAsDelivered(String code);
+
     CompletableFuture<Message> markAsRead(String code);
-    public CompletableFuture<Object> sendAction( PayloadAction input);
+
+    public CompletableFuture<Object> sendAction(PayloadAction input);
+
+    public CompletableFuture<List<Message>> getReplyMessage(String id);
 }

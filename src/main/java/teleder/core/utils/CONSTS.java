@@ -13,6 +13,7 @@ public class CONSTS {
     public final static String STOP_CHATTING = "STOP_CHATTING";
     public final static String EMOJI = "EMOJI";
     public final static String EDIT_MESSAGE = "EDIT_MESSAGE";
+    public final static String DELETE_MESSAGE = "DELETE_MESSAGE";
 
     public final static String CALL = "CALL";
     public final static String IMAGE = "IMAGE";

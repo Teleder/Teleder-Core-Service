@@ -11,8 +11,8 @@ import teleder.core.dtos.PayloadAction;
 import teleder.core.dtos.PayloadMessage;
 import teleder.core.models.Message.Message;
 import teleder.core.services.Message.IMessageService;
-import teleder.core.utils.CONSTS;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -32,7 +32,7 @@ public class MessageController {
     @Authenticate
     @PostMapping("/sendAction")
     public CompletableFuture<Object> sendAction(@RequestBody PayloadAction input) {
-            return messageService.sendAction(input);
+        return messageService.sendAction(input);
     }
 
     @Authenticate
@@ -41,7 +41,6 @@ public class MessageController {
         return messageService.sendGroupMessage(groupId, message);
     }
 
-    @Async
     @Authenticate
     @GetMapping("/{code}")
     public PagedResultDto<Message> findMessagesWithPaginationAndSearch(@RequestParam(name = "page", defaultValue = "0") int page,
@@ -49,7 +48,8 @@ public class MessageController {
                                                                        @RequestParam(name = "content", defaultValue = "") String content,
                                                                        @PathVariable(name = "code") String code) {
 
-        CompletableFuture<Long> total = messageService.countMessagesByCode(code);
+
+        CompletableFuture<Long> total = messageService.countMessagesByCode(code, content);
         CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(page * size, size, code, content);
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, messages);
         try {
@@ -58,25 +58,42 @@ public class MessageController {
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
+
         throw new RuntimeException("Some thing went wrong!");
     }
 
-    @Async
     @Authenticate
     @GetMapping("/message-by-code-paginate/{code}")
     public PagedResultDto<Message> findMessagesByCodePaginate(@RequestParam(name = "skip", defaultValue = "0") int skip,
                                                               @RequestParam(name = "limit", defaultValue = "30") int limit,
                                                               @RequestParam(name = "content", defaultValue = "") String content,
-                                                              @PathVariable(name = "code") String code) {
-
-        CompletableFuture<Long> total = messageService.countMessagesByCode(code);
-        CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(skip, limit, code, content);
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, messages);
-        try {
-            allFutures.get();
-            return PagedResultDto.create(Pagination.create(total.get(), 0, limit), messages.get());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+                                                              @PathVariable(name = "code") String code,
+                                                              @RequestParam(name = "parentId") String parentId) {
+        if (parentId.equals("null")) {
+            CompletableFuture<Long> total = messageService.countMessagesByCode(code, content);
+            CompletableFuture<List<Message>> messages = messageService.findMessagesWithPaginationAndSearch(skip, limit, code, content);
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(total, messages);
+            try {
+                allFutures.get();
+                return PagedResultDto.create(Pagination.create(total.get(), 0, limit), messages.get());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        } else {
+            CompletableFuture<List<Message>> messages = messageService.getReplyMessage(parentId);
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(messages);
+            try {
+                allFutures.get();
+                List<Message> messageList = messages.get();
+                if (messageList == null){
+                    return PagedResultDto.create(Pagination.create(0, 0, 0), new ArrayList<>());
+                }
+                int end = Math.min(limit, messageList.size() - skip);
+                messageList = messageList.subList(skip, end);
+                return PagedResultDto.create(Pagination.create(messageList.size(), 0, end), messageList);
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
         }
         throw new RuntimeException("Some thing went wrong!");
     }

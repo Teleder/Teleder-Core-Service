@@ -14,6 +14,7 @@ import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.Group.Group;
 import teleder.core.models.Message.Emotion;
+import teleder.core.models.Message.HistoryChange;
 import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
@@ -64,27 +65,39 @@ public class MessageService implements IMessageService {
         Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getType(), user, contact, null, messagePayload.getFile());
         if (user == null || contact == null)
             throw new NotFoundException("Not found user");
-        Conservation conservation = user.getConservations().stream()
-                .filter(x -> x.getUser_1().getId().contains(contactId) || x.getUser_2().getId().contains(contactId))
-                .findFirst().orElse(null);
-        if (conservation == null) {
-            conservation = new Conservation(user, message.getUser_receive(), null);
-            conservation = conservationRepository.save(conservation);
-            user.getConservations().add(conservation);
-            contact.getConservations().add(conservation);
-            user.setConservations(user.getConservations());
-            contact.setConservations(contact.getConservations());
-            userRepository.save(user);
-            userRepository.save(contact);
-        }
-        // add tin nhan vao db
         message.setUser_send(user);
         message.setUser_receive(contact);
-        message.setCode(conservation.getCode());
-        message = messageRepository.save(message);
-        conservation = conservationRepository.findByCode(message.getCode());
-        conservation.setLastMessage(message);
-        conservationRepository.save(conservation);
+        message.setCode(messagePayload.getCode());
+        if (messagePayload.getParentMessageId() == null) {
+            message = messageRepository.save(message);
+            Conservation conservation = user.getConservations().stream()
+                    .filter(x -> x.getUser_1().getId().contains(contactId) || x.getUser_2().getId().contains(contactId))
+                    .findFirst().orElse(null);
+            if (conservation == null) {
+                conservation = new Conservation(user, message.getUser_receive(), null);
+                conservation = conservationRepository.save(conservation);
+                user.getConservations().add(conservation);
+                contact.getConservations().add(conservation);
+                user.setConservations(user.getConservations());
+                contact.setConservations(contact.getConservations());
+                userRepository.save(user);
+                userRepository.save(contact);
+            }
+            // add tin nhan vao db
+
+            conservation = conservationRepository.findByCode(message.getCode());
+            conservation.setLastMessage(message);
+            conservationRepository.save(conservation);
+        }
+        else {
+            Message parentMessage = messageRepository.findById(messagePayload.getParentMessageId()).orElse(null);
+            if (parentMessage == null)
+                throw new NotFoundException("Not found message reply");
+            message.setIdParent(messagePayload.getParentMessageId());
+            message = messageRepository.save(message);
+            parentMessage.getReplyMessages().add(message);
+            messageRepository.save(parentMessage);
+        }
         simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(message, CONSTS.MESSAGE_PRIVATE));
         return CompletableFuture.completedFuture(message);
     }
@@ -127,12 +140,30 @@ public class MessageService implements IMessageService {
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 return CompletableFuture.completedFuture(null);
             }
-            case CONSTS.EDIT_MESSAGE:{
+            case CONSTS.EDIT_MESSAGE: {
                 Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
                 if (mess == null)
                     throw new NotFoundException("Not found message");
+                mess.getHistoryChanges().add(new HistoryChange(mess.getContent()));
                 mess.setContent(input.getMessageText());
                 mess = messageRepository.save(mess);
+                input.setMessage(mess);
+                if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+                    simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                else
+                    simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
+                return CompletableFuture.completedFuture(mess);
+            }
+            case CONSTS.DELETE_MESSAGE: {
+                Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
+                if (mess == null)
+                    throw new NotFoundException("Not found message");
+                mess.setDeleted(true);
+                mess = messageRepository.save(mess);
+                Message lastMessage = messageRepository.findLastMessageByCode(mess.getCode()).orElse(null);
+                Conservation conservation = conservationRepository.findByCode(mess.getCode());
+                conservation.setLastMessage(lastMessage);
+                conservationRepository.save(conservation);
                 input.setMessage(mess);
                 if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
                     simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
@@ -171,6 +202,7 @@ public class MessageService implements IMessageService {
     }
 
     @Override
+    @Async
     public CompletableFuture<List<Message>> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().contains(code)))
@@ -183,11 +215,13 @@ public class MessageService implements IMessageService {
     }
 
     @Override
-    public CompletableFuture<Long> countMessagesByCode(String code) {
-        return CompletableFuture.supplyAsync(() -> messageRepository.countMessagesByCode(code).orElse(0L));
+    @Async
+    public CompletableFuture<Long> countMessagesByCode(String code, String content) {
+        return CompletableFuture.supplyAsync(() -> messageRepository.countMessagesByCode(code,content).orElse(0L));
     }
 
     @Override
+    @Async
     public CompletableFuture<Message> markAsDelivered(String code) {
         Message message = messageRepository.findByCode(code).orElse(null);
         if (message == null)
@@ -198,6 +232,16 @@ public class MessageService implements IMessageService {
     }
 
     @Override
+    @Async
+    public CompletableFuture<List<Message>> getReplyMessage(String id) {
+        Message message = messageRepository.findById(id).orElse(null);
+        if (message == null)
+            throw new NotFoundException("Not Found Message!");
+        return CompletableFuture.completedFuture(message.getReplyMessages());
+    }
+
+    @Override
+    @Async
     public CompletableFuture<Message> markAsRead(String code) {
         Message message = messageRepository.findByCode(code).orElse(null);
         if (message == null)

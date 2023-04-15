@@ -30,11 +30,12 @@ public class Message extends BaseModel implements Comparable<Message> {
     @DBRef
     private User user_receive;
     @DBRef
-    Message parentMessageId;
+    List<Message> replyMessages = new ArrayList<>();
     @DBRef
     private Group group;
     @DBRef
     private File file;
+    String idParent = null;
     Date readAt = null;
     Date deliveredAt =null;
 
@@ -63,23 +64,23 @@ public class Message extends BaseModel implements Comparable<Message> {
         this.TYPE = TYPE;
     }
 
-    public Message(String content, String code, String TYPE, User user_send, User user_receive, Message parentMessageId, File file) {
+    public Message(String content, String code, String TYPE, User user_send, User user_receive, List<Message> replyMessages, File file) {
         this.code = code;
         this.content = content;
         this.TYPE = TYPE;
         this.user_send = user_send;
         this.user_receive = user_receive;
-        this.parentMessageId = parentMessageId;
+        this.replyMessages = replyMessages;
         this.file = file;
     }
 
-    public Message(String content, String code, String TYPE, User user_send, Group group, Message parentMessageId, File file) {
+    public Message(String content, String code, String TYPE, User user_send, Group group, List<Message> replyMessages, File file) {
         this.code = code;
         this.content = content;
         this.TYPE = TYPE;
         this.user_send = user_send;
         this.group = group;
-        this.parentMessageId = parentMessageId;
+        this.replyMessages = replyMessages;
         this.file = file;
     }
 
