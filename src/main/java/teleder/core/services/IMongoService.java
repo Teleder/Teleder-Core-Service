@@ -3,6 +3,7 @@ package teleder.core.services;
 import com.google.zxing.WriterException;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -14,7 +15,7 @@ public interface IMongoService<T, D, E> {
 
     CompletableFuture<List<T>> getAll();
 
-    CompletableFuture<T> update(String id, E input);
+    CompletableFuture<T> update(String id, E input) throws InvocationTargetException, IllegalAccessException;
 
     CompletableFuture<Void> delete(String id);
 }

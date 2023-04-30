@@ -1,9 +1,9 @@
 package teleder.core.services.User;
 
 import com.google.zxing.WriterException;
+import org.apache.commons.beanutils.BeanUtilsBean;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -41,9 +41,11 @@ import teleder.core.services.User.dtos.UpdateUserDto;
 import teleder.core.services.User.dtos.UserDto;
 import teleder.core.services.User.dtos.UserProfileDto;
 import teleder.core.utils.CONSTS;
+import teleder.core.utils.NullAwareBeanUtilsBean;
 import teleder.core.utils.QRCodeGenerator;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -354,11 +356,12 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<UserDto> update(String id, UpdateUserDto User) {
+    public CompletableFuture<UserDto> update(String id, UpdateUserDto User) throws InvocationTargetException, IllegalAccessException {
         User existingUserLevel = userRepository.findById(id).orElse(null);
         if (existingUserLevel == null)
             throw new NotFoundException("Unable to find user level!");
-        BeanUtils.copyProperties(User, existingUserLevel);
+        BeanUtilsBean nullAwareBeanUtilsBean = NullAwareBeanUtilsBean.getInstance();
+        nullAwareBeanUtilsBean.copyProperties(existingUserLevel, User);
         return CompletableFuture.completedFuture(toDto.map(userRepository.save(existingUserLevel), UserDto.class));
     }
 

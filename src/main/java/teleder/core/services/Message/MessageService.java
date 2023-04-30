@@ -98,6 +98,7 @@ public class MessageService implements IMessageService {
             parentMessage.getReplyMessages().add(message);
             messageRepository.save(parentMessage);
         }
+
         simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(message, CONSTS.MESSAGE_PRIVATE));
         return CompletableFuture.completedFuture(message);
     }

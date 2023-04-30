@@ -23,6 +23,7 @@ import teleder.core.services.User.dtos.UserDto;
 import teleder.core.services.User.dtos.UserProfileDto;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -55,7 +56,7 @@ public class UserController {
     @Authenticate
     @RequiresAuthorization("ADMIN")
     @PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserDto> update(@PathVariable String id, @RequestBody UpdateUserDto input) {
+    public CompletableFuture<UserDto> update(@PathVariable String id, @RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
         return userService.update(id, input);
     }
 
@@ -75,7 +76,7 @@ public class UserController {
 
     @Authenticate
     @PatchMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserDto> updateProfile( @RequestBody UpdateUserDto input) {
+    public CompletableFuture<UserDto> updateProfile( @RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return userService.update(userId, input);
     }
