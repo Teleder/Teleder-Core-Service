@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import org.joda.time.DateTime;
+import teleder.core.models.File.File;
 
 @Data
 public class UserSearchDto {
@@ -23,4 +24,6 @@ public class UserSearchDto {
     private String phone;
     @JsonProperty(value = "bio")
     private String bio;
+    @JsonProperty(value = "avatar")
+    private File avatar;
 }
