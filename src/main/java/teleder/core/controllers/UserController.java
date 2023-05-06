@@ -1,11 +1,8 @@
 package teleder.core.controllers;
 
 import com.google.zxing.WriterException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -15,12 +12,8 @@ import teleder.core.annotations.Authenticate;
 import teleder.core.annotations.RequiresAuthorization;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.models.User.Contact;
-import teleder.core.models.User.User;
 import teleder.core.services.User.IUserService;
-import teleder.core.services.User.dtos.CreateUserDto;
-import teleder.core.services.User.dtos.UpdateUserDto;
-import teleder.core.services.User.dtos.UserDto;
-import teleder.core.services.User.dtos.UserProfileDto;
+import teleder.core.services.User.dtos.*;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -70,13 +63,14 @@ public class UserController {
     @Authenticate
     @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
     public CompletableFuture<UserProfileDto> getProfile() {
-        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();;
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        ;
         return userService.getProfile(userId);
     }
 
     @Authenticate
     @PatchMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserDto> updateProfile( @RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
+    public CompletableFuture<UserDto> updateProfile(@RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return userService.update(userId, input);
     }
@@ -115,10 +109,10 @@ public class UserController {
 
     @Authenticate
     @GetMapping(value = "/contact-waiting-accept", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(@RequestParam String displayName,
-                                                                                  @RequestParam(name = "page", defaultValue = "0") int page,
-                                                                                  @RequestParam(name = "size", defaultValue = "10") int size) {
-        return userService.getListContactWaitingAccept(displayName, page * size, size);
+    public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
+        return userService.getListContactWaitingAccept(page * size, size);
     }
 
     @Authenticate
@@ -133,5 +127,9 @@ public class UserController {
         return userService.getListContactRequestSend();
     }
 
-
+    @Authenticate
+    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    public CompletableFuture<List<UserSearchDto>> searchUser(@RequestParam String searchText) {
+        return userService.searchUser(searchText);
+    }
 }

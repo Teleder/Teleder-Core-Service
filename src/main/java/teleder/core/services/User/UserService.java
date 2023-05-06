@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -36,10 +37,7 @@ import teleder.core.repositories.IFileRepository;
 import teleder.core.repositories.IMessageRepository;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.File.IFileService;
-import teleder.core.services.User.dtos.CreateUserDto;
-import teleder.core.services.User.dtos.UpdateUserDto;
-import teleder.core.services.User.dtos.UserDto;
-import teleder.core.services.User.dtos.UserProfileDto;
+import teleder.core.services.User.dtos.*;
 import teleder.core.utils.CONSTS;
 import teleder.core.utils.NullAwareBeanUtilsBean;
 import teleder.core.utils.QRCodeGenerator;
@@ -113,19 +111,18 @@ public class UserService implements IUserService, UserDetailsService {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         if (userId == contactId)
             throw new BadRequestException("Cannot add friend self");
-        Optional<User> userOptional = userRepository.findById(userId);
-        Optional<User> contactOptional = userRepository.findById(contactId);
-        if (userOptional.isPresent() && contactOptional.isPresent()) {
-            User user = userOptional.get();
-            User contact = contactOptional.get();
-            user.getList_contact().add(new Contact(contact, Contact.Status.WAITING));
-            contact.getList_contact().add(new Contact(user, Contact.Status.REQUEST));
-            userRepository.save(user);
-            userRepository.save(contact);
-            simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.MESSAGE_GROUP));
-            return CompletableFuture.completedFuture(true);
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user!"));
+        User contact = userRepository.findById(contactId).orElseThrow(() -> new NotFoundException("Not found contact!"));
+        for (Contact c : user.getList_contact()) {
+            if (c.getUser().getId().equals(contactId))
+                throw new BadRequestException("Cannot perform this action");
         }
-        throw new NotFoundException("Not Found Contact!");
+        user.getList_contact().add(new Contact(contact, Contact.Status.WAITING));
+        contact.getList_contact().add(new Contact(user, Contact.Status.REQUEST));
+        userRepository.save(user);
+        userRepository.save(contact);
+        simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.MESSAGE_GROUP));
+        return CompletableFuture.completedFuture(true);
     }
 
     @Override
@@ -241,13 +238,12 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     @Override
-    public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(String displayName, long skip, int limit) {
+    public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(long skip, int limit) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
 
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(userId)),
                 Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.REQUEST)),
-                Aggregation.match(Criteria.where("list_contact.user.displayName").regex(Pattern.compile(displayName, Pattern.CASE_INSENSITIVE))),
                 Aggregation.unwind("list_contact"),
                 Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
                 Aggregation.skip(skip),
@@ -279,7 +275,7 @@ public class UserService implements IUserService, UserDetailsService {
                 }
             }
             if (friend != null) {
-                user.getBlocks().remove(friend);
+                user.getList_contact().remove(friend);
                 userRepository.save(user);
             }
             for (Contact f : contact.getList_contact()) {
@@ -289,7 +285,7 @@ public class UserService implements IUserService, UserDetailsService {
                 }
             }
             if (friend != null) {
-                contact.getBlocks().remove(friend);
+                contact.getList_contact().remove(friend);
                 userRepository.save(contact);
             }
             simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.DENY_CONTACT));
@@ -323,6 +319,19 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
+    @Async
+    @Override
+    public CompletableFuture<List<UserSearchDto>> searchUser(String searchText) {
+        Criteria criteria = new Criteria();
+        criteria.orOperator(
+                Criteria.where("phone").regex(searchText, "i"),
+                Criteria.where("bio").regex(searchText, "i")
+        );
+        Query query = new Query(criteria);
+        List<User> users = mongoTemplate.find(query, User.class);
+        toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        return CompletableFuture.completedFuture(users.stream().map(x -> toDto.map(x, UserSearchDto.class)).toList());
+    }
 
     @Override
     public CompletableFuture<List<Contact>> getListContactRequestSend() {
@@ -362,6 +371,7 @@ public class UserService implements IUserService, UserDetailsService {
             throw new NotFoundException("Unable to find user level!");
         BeanUtilsBean nullAwareBeanUtilsBean = NullAwareBeanUtilsBean.getInstance();
         nullAwareBeanUtilsBean.copyProperties(existingUserLevel, User);
+        existingUserLevel.setDisplayName(existingUserLevel.getFirstName() + " " + existingUserLevel.getLastName());
         return CompletableFuture.completedFuture(toDto.map(userRepository.save(existingUserLevel), UserDto.class));
     }
 
