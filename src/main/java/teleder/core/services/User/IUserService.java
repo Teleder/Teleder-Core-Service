@@ -28,7 +28,7 @@ public interface IUserService extends IMongoService<UserDto, CreateUserDto, Upda
 
     CompletableFuture<Boolean> removeBlock(String contactId);
 
-    public CompletableFuture<PagedResultDto<Contact>> getListContact(String displayName, long skip, int limit);
+    public CompletableFuture<PagedResultDto<UserSearchDto>> getListContact(String displayName, long skip, int limit);
 
     public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept( long skip, int limit);
 

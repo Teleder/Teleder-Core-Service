@@ -49,7 +49,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
 
 @Service
 public class UserService implements IUserService, UserDetailsService {
@@ -214,27 +213,22 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<PagedResultDto<Contact>> getListContact(String displayName, long skip, int limit) {
+    public CompletableFuture<PagedResultDto<UserSearchDto>> getListContact(String displayName, long skip, int limit) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
 //        MatchOperation matchOperation = Aggregation.match(
 //                Criteria.where("list_contact.user.displayName").regex(displayName, "i").and("_id").is(userId)
 //        );
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user!"));
+        List<String> listContact = user.getList_contact().stream().map(x -> x.getUser().getId()).toList();
         Aggregation aggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("_id").is(userId)),
-                Aggregation.match(Criteria.where("list_contact.user.displayName").regex(Pattern.compile(displayName, Pattern.CASE_INSENSITIVE))),
-                Aggregation.unwind("list_contact"),
-                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
+                Aggregation.match(Criteria.where("_id").in(listContact)),
+                Aggregation.sort(Sort.Direction.ASC, "displayName"),
                 Aggregation.skip(skip),
-                Aggregation.limit(limit),
-                Aggregation.project()
-                        .and("_id").as("id")
-                        .and("list_contact.user").as("user")
-                        .and("list_contact.status").as("status")
+                Aggregation.limit(limit)
         );
-
-        List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
-        long totalCount = userRepository.findById(userId).get().getList_contact().size();
-        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts));
+        List<User> contacts = mongoTemplate.aggregate(aggregation, "User", User.class).getMappedResults();
+        long totalCount = user.getList_contact().size();
+        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit),contacts.stream().map(x -> toDto.map(x, UserSearchDto.class)).toList()));
     }
 
     @Override
