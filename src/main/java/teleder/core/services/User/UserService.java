@@ -219,16 +219,19 @@ public class UserService implements IUserService, UserDetailsService {
 //                Criteria.where("list_contact.user.displayName").regex(displayName, "i").and("_id").is(userId)
 //        );
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user!"));
-        List<String> listContact = user.getList_contact().stream().map(x -> x.getUser().getId()).toList();
+        List<String> listContact = user.getList_contact()
+                .stream()
+                .filter(x -> x.getStatus().equals(Contact.Status.ACCEPT))
+                .map(x -> x.getUser().getId()).toList();
         Aggregation aggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("_id").in(listContact)),
+                Aggregation.match(Criteria.where("displayName").regex(displayName, "i").and("_id").in(listContact)),
                 Aggregation.sort(Sort.Direction.ASC, "displayName"),
                 Aggregation.skip(skip),
                 Aggregation.limit(limit)
         );
         List<User> contacts = mongoTemplate.aggregate(aggregation, "User", User.class).getMappedResults();
-        long totalCount = user.getList_contact().size();
-        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit),contacts.stream().map(x -> toDto.map(x, UserSearchDto.class)).toList()));
+        long totalCount = user.getList_contact().stream().filter(x -> x.getStatus().equals(Contact.Status.ACCEPT)).toList().size();
+        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts.stream().map(x -> toDto.map(x, UserSearchDto.class)).toList()));
     }
 
     @Override
