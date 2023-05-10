@@ -1,15 +1,17 @@
 package teleder.core.services.Message;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import teleder.core.dtos.PayloadAction;
-import teleder.core.dtos.PayloadMessage;
-import teleder.core.dtos.SocketPayload;
+import teleder.core.dtos.*;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.Group.Group;
@@ -26,6 +28,7 @@ import teleder.core.services.Message.dtos.MessageDto;
 import teleder.core.services.Message.dtos.UpdateMessageDto;
 import teleder.core.utils.CONSTS;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class MessageService implements IMessageService {
+    private final MongoTemplate mongoTemplate;
     final
     SimpMessagingTemplate simpMessagingTemplate;
     final
@@ -46,13 +50,14 @@ public class MessageService implements IMessageService {
     private final IGroupRepository iGroupRepository;
 
     public MessageService(SimpMessagingTemplate simpMessagingTemplate, IMessageRepository messageRepository, IUserRepository userRepository, IConservationRepository conservationRepository, ModelMapper toDto,
-                          IGroupRepository iGroupRepository) {
+                          IGroupRepository iGroupRepository, MongoTemplate mongoTemplate) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.conservationRepository = conservationRepository;
         this.toDto = toDto;
         this.iGroupRepository = iGroupRepository;
+        this.mongoTemplate = mongoTemplate;
     }
 
     @Async
@@ -88,8 +93,7 @@ public class MessageService implements IMessageService {
             conservation = conservationRepository.findByCode(message.getCode());
             conservation.setLastMessage(message);
             conservationRepository.save(conservation);
-        }
-        else {
+        } else {
             Message parentMessage = messageRepository.findById(messagePayload.getParentMessageId()).orElse(null);
             if (parentMessage == null)
                 throw new NotFoundException("Not found message reply");
@@ -217,8 +221,42 @@ public class MessageService implements IMessageService {
 
     @Override
     @Async
+    public CompletableFuture<PagedResultDto<Message>> findMessagesByIdUser(long skip, int limit, String content, String contactId) {
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        Conservation conservation = null;
+        for (Conservation tmp :
+                userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user")).getConservations()) {
+            if (tmp.getUser_1().getId().equals(contactId) || tmp.getUser_2().getId().equals(contactId)) {
+                conservation = tmp;
+                break;
+            }
+        }
+        ;
+        if (conservation == null)
+            return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(0, skip, limit), new ArrayList<Message>()));
+
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("content").regex(content, "i").and("code").in(conservation.getCode())),
+                Aggregation.sort(Sort.Direction.DESC, "createAt"),
+                Aggregation.skip(skip),
+                Aggregation.limit(limit)
+        );
+        List<Message> messages = mongoTemplate.aggregate(aggregation, "Message", Message.class).getMappedResults();
+        messages = messages.stream()
+                .sorted(Comparator.comparing(Message::getCreateAt))
+                .collect(Collectors.toList());
+        aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("content").regex(content, "i").and("code").in(conservation.getCode())),
+                Aggregation.sort(Sort.Direction.DESC, "createAt")
+        );
+        long total = mongoTemplate.aggregate(aggregation, "Message", Message.class).getMappedResults().size();
+        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(total, skip, limit), messages));
+    }
+
+    @Override
+    @Async
     public CompletableFuture<Long> countMessagesByCode(String code, String content) {
-        return CompletableFuture.supplyAsync(() -> messageRepository.countMessagesByCode(code,content).orElse(0L));
+        return CompletableFuture.supplyAsync(() -> messageRepository.countMessagesByCode(code, content).orElse(0L));
     }
 
     @Override

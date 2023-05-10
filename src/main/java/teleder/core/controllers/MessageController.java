@@ -62,6 +62,17 @@ public class MessageController {
         throw new RuntimeException("Some thing went wrong!");
     }
 
+
+    @Authenticate
+    @GetMapping("/find-message-by-contact")
+    public CompletableFuture<PagedResultDto<Message>> findMessagesByIdUser(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                                           @RequestParam(name = "size", defaultValue = "10") int size,
+                                                                           @RequestParam(name = "content", defaultValue = "") String content,
+                                                                           @RequestParam(name = "contactId", defaultValue = "") String contactId
+    ) {
+        return messageService.findMessagesByIdUser(page * size, size, content, contactId);
+    }
+
     @Authenticate
     @GetMapping("/message-by-code-paginate/{code}")
     public PagedResultDto<Message> findMessagesByCodePaginate(@RequestParam(name = "skip", defaultValue = "0") int skip,
@@ -85,7 +96,7 @@ public class MessageController {
             try {
                 allFutures.get();
                 List<Message> messageList = messages.get();
-                if (messageList == null){
+                if (messageList == null) {
                     return PagedResultDto.create(Pagination.create(0, 0, 0), new ArrayList<>());
                 }
                 int end = Math.min(limit, messageList.size() - skip);

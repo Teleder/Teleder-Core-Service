@@ -1,5 +1,6 @@
 package teleder.core.services.Message;
 
+import teleder.core.dtos.PagedResultDto;
 import teleder.core.dtos.PayloadAction;
 import teleder.core.dtos.PayloadMessage;
 import teleder.core.models.Message.Message;
@@ -27,4 +28,5 @@ public interface IMessageService extends IMongoService<MessageDto, CreateMessage
     public CompletableFuture<Object> sendAction(PayloadAction input);
 
     public CompletableFuture<List<Message>> getReplyMessage(String id);
+    public CompletableFuture<PagedResultDto<Message>> findMessagesByIdUser(long skip, int limit, String content, String contactId);
 }

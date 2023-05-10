@@ -33,7 +33,6 @@ public class User extends BaseModel implements UserDetails {
     private File qr;
     private List<Block> blocks = new ArrayList<>();
     private String password;
-
     @DBRef()
     private List<Conservation> conservations = new ArrayList<>();
 
