@@ -57,7 +57,7 @@ public class WebSocketEventListener {
         user.setActive(true);
         user = userRepository.save(user);
         for (Contact contact : user.getList_contact()) {
-            messagingTemplate.convertAndSend("/messages/user." + contact.getUser().getId(), new UserOnlineOfflinePayload(user.getId(), true));
+            messagingTemplate.convertAndSend("/messages/user." + contact.getUserId(), new UserOnlineOfflinePayload(user.getId(), true));
         }
     }
 
@@ -75,7 +75,7 @@ public class WebSocketEventListener {
             user = userRepository.save(user);
             sessionIdToUsernameMap.remove(sessionId);
             for (Contact contact : user.getList_contact()) {
-                messagingTemplate.convertAndSend("/messages/user." + contact.getUser().getId(), new UserOnlineOfflinePayload(user.getId(), false));
+                messagingTemplate.convertAndSend("/messages/user." + contact.getUserId(), new UserOnlineOfflinePayload(user.getId(), false));
             }
         }
     }

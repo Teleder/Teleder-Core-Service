@@ -8,6 +8,7 @@ import teleder.core.dtos.ContactInfoDto;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.File.File;
 import teleder.core.models.User.Block;
+import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 
 import java.util.ArrayList;
@@ -38,9 +39,8 @@ public class UserProfileDto {
     private List<Block> blocks;
     @JsonProperty(value = "conservations")
     private List<Conservation> conservations = new ArrayList<>();
-
     @JsonProperty(value = "list_contact")
-    private List<ContactDto> list_contact = new ArrayList<>();
+    private List<Contact> list_contact = new ArrayList<>();
     @JsonProperty(value = "role")
     private User.Role role;
     @JsonProperty(value = "lastActiveAt")

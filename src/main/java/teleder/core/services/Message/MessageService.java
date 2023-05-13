@@ -67,19 +67,19 @@ public class MessageService implements IMessageService {
         // check conservation da tao hay chua neu chua tao thi tao moi
         User user = userRepository.findById(userId).orElse(null);
         User contact = userRepository.findById(contactId).orElse(null);
-        Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getType(), user, contact, null, messagePayload.getFile());
+        Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getType(), userId, contactId, null, messagePayload.getFile());
         if (user == null || contact == null)
             throw new NotFoundException("Not found user");
-        message.setUser_send(user);
-        message.setUser_receive(contact);
+        message.setUserId_send(userId);
+        message.setUserId_receive(contactId);
         message.setCode(messagePayload.getCode());
         if (messagePayload.getParentMessageId() == null) {
             message = messageRepository.save(message);
             Conservation conservation = user.getConservations().stream()
-                    .filter(x -> x.getUser_1().getId().contains(contactId) || x.getUser_2().getId().contains(contactId))
+                    .filter(x -> x.getUserId_1().equals(contactId) || x.getUserId_2().equals(contactId))
                     .findFirst().orElse(null);
             if (conservation == null) {
-                conservation = new Conservation(user, message.getUser_receive(), null);
+                conservation = new Conservation(userId, message.getUserId_receive(), null);
                 conservation = conservationRepository.save(conservation);
                 user.getConservations().add(conservation);
                 contact.getConservations().add(conservation);
@@ -130,7 +130,7 @@ public class MessageService implements IMessageService {
                 Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
                 if (mess == null)
                     throw new NotFoundException("Not found message");
-                mess.getList_emotion().add(new Emotion(user, input.getEmoji()));
+                mess.getList_emotion().add(new Emotion(userId, input.getEmoji()));
                 mess = messageRepository.save(mess);
                 if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
                     simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
@@ -187,16 +187,16 @@ public class MessageService implements IMessageService {
         User user = userRepository.findById(userId).orElse(null);
         Group group = iGroupRepository.findById(groupId).orElse(null);
         Conservation conservation = user.getConservations().stream()
-                .filter(x -> x.getGroup().getId().contains(groupId))
+                .filter(x -> x.getGroupId().contains(groupId))
                 .findFirst().orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user");
         if (conservation == null)
             throw new NotFoundException("Not found Conservation");
-        Message message = new Message(messagePayload.getCode(), messagePayload.getContent(), messagePayload.getType(), user, group, null, messagePayload.getFile());
-        message.setUser_send(user);
+        Message message = new Message(messagePayload.getCode(), messagePayload.getContent(), messagePayload.getType(), userId, groupId, null, messagePayload.getFile());
+        message.setUserId_send(userId);
         message.setCode(conservation.getCode());
-        message.setGroup(conservation.getGroup());
+        message.setGroupId(conservation.getGroupId());
         message.setTYPE(CONSTS.MESSAGE_GROUP);
         conservation = conservationRepository.findByCode(message.getCode());
         conservation.setLastMessage(message);
@@ -226,7 +226,7 @@ public class MessageService implements IMessageService {
         Conservation conservation = null;
         for (Conservation tmp :
                 userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user")).getConservations()) {
-            if (tmp.getUser_1().getId().equals(contactId) || tmp.getUser_2().getId().equals(contactId)) {
+            if (tmp.getUserId_1().equals(contactId) || tmp.getUserId_2().equals(contactId)) {
                 conservation = tmp;
                 break;
             }

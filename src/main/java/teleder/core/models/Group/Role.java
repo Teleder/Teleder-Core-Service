@@ -12,7 +12,6 @@ public class Role {
     String name;
     @DBRef
     private List<Permission> permissions;
-
     public Role(String name, List<Permission> permissions) {
         this.name = name;
         this.permissions = permissions;

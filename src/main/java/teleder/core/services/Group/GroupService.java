@@ -36,6 +36,7 @@ import teleder.core.utils.CONSTS;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -94,25 +95,25 @@ public class GroupService implements IGroupService {
                 throw new UnauthorizedException("You do not have permission to do that");
             // check block
             Block blockFilter = group.getBlock_list().stream()
-                    .filter(x -> x.getUser_id().contains(memberId))
+                    .filter(x -> x.getUserId().contains(memberId))
                     .findFirst().orElse(null);
             if (blockFilter != null)
                 throw new BadRequestException("User has been block with reason: " + blockFilter.getReason() + " ,Please unlock if you are admin or member has permission to unlock before add new member");
             if (group.isPublic() || user.getId().contains(group.getUser_own().getId())) {
-                group.getMembers().add(new Member(memberId, user, Member.Status.ACCEPT));
-                member.getConservations().add(new Conservation(group, group.getCode()));
+                group.getMembers().add(new Member(memberId, userId, Member.Status.ACCEPT));
+                member.getConservations().add(new Conservation(groupId, group.getCode()));
                 // add conservation to user
-                Message mess = new Message(user.getDisplayName() + " added " + member.getDisplayName() + " to group", group.getCode(), CONSTS.ADD_MEMBER_TO_GROUP);
+                Message mess = new Message(user.getDisplayName() != null ? "User" : user.getDisplayName() + " added " + member.getDisplayName() + " to group", group.getCode(), CONSTS.ADD_MEMBER_TO_GROUP);
                 mess = messageRepository.save(mess);
                 simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.ADD_MEMBER_TO_GROUP));
                 userRepository.save(member);
             } else {
-                group.getMembers().add(new Member(memberId, user, WAITING));
+                group.getMembers().add(new Member(memberId, userId, WAITING));
                 simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(new ContactInfoDto(member), CONSTS.REQUEST_MEMBER_TO_GROUP));
             }
         } else {
             // neu member tu request
-            group.getMembers().add(new Member(memberId, user, WAITING));
+            group.getMembers().add(new Member(memberId, userId, WAITING));
             simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(new ContactInfoDto(member), CONSTS.REQUEST_MEMBER_TO_GROUP));
         }
 
@@ -132,7 +133,7 @@ public class GroupService implements IGroupService {
             throw new NotFoundException("Not found group");
         // check block
         Block blockFilter = group.getBlock_list().stream()
-                .filter(x -> x.getUser_id().contains(memberId))
+                .filter(x -> x.getUserId().contains(memberId))
                 .findFirst().orElse(null);
         if (blockFilter != null)
             throw new BadRequestException("User has been block with reason: " + blockFilter.getReason());
@@ -169,7 +170,7 @@ public class GroupService implements IGroupService {
             throw new NotFoundException("Not found group");
         // check block
         Block blockFilter = group.getBlock_list().stream()
-                .filter(x -> x.getUser_id().contains(memberId))
+                .filter(x -> x.getUserId().contains(memberId))
                 .findFirst().orElse(null);
         if (blockFilter != null)
             throw new BadRequestException("User has been block with reason: " + blockFilter.getReason());
@@ -180,7 +181,7 @@ public class GroupService implements IGroupService {
             // them vao ds chan
             blockFilter = null;
             for (Block block : group.getBlock_list()) {
-                if (block.getUser_id().contains(userId)) {
+                if (block.getUserId().contains(userId)) {
                     blockFilter = block;
                 }
             }
@@ -208,7 +209,7 @@ public class GroupService implements IGroupService {
             throw new NotFoundException("Not found group");
         // check block
         Block blockFilter = group.getBlock_list().stream()
-                .filter(x -> x.getUser_id().contains(memberId))
+                .filter(x -> x.getUserId().contains(memberId))
                 .findFirst().orElse(null);
         if (blockFilter != null)
             throw new BadRequestException("User has been block with reason: " + blockFilter.getReason());
@@ -260,7 +261,7 @@ public class GroupService implements IGroupService {
         if (group.getUser_own().getId().contains(userId)) {
             // get role user
             // neu role la member thi la go role
-            if (roleName.equals("member")){
+            if (roleName.equals("member")) {
                 for (Member mem : group.getMembers()) {
                     if (mem.getUserId().contains(memberId)) {
                         mem.setRole(null);
@@ -270,8 +271,7 @@ public class GroupService implements IGroupService {
                 Message mess = new Message(member.getDisplayName() + " has removed role", group.getCode(), CONSTS.DECENTRALIZATION);
                 mess = messageRepository.save(mess);
                 simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.DECENTRALIZATION));
-            }
-            else{
+            } else {
                 // cap role moi
                 Role roleFilter = null;
                 for (Role role : group.getRoles()) {
@@ -368,7 +368,9 @@ public class GroupService implements IGroupService {
                 group.getMembers().remove(memberFilter);
                 groupRepository.save(group);
             }
-            simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(new ContactInfoDto( memberFilter.getUser()), CONSTS.DENY_MEMBER_JOIN));
+            simpMessagingTemplate.convertAndSend("/messages/group." + groupId,
+                    SocketPayload.create(new ContactInfoDto(userRepository.findById(memberId).orElseThrow( () -> new NotFoundException("Not found user")))
+                    , CONSTS.DENY_MEMBER_JOIN));
             return null;
         }
     }
@@ -400,8 +402,7 @@ public class GroupService implements IGroupService {
                     Member.Status status = Member.Status.valueOf(memberDoc.getString("status"));
                     Date createAt = memberDoc.getDate("createAt");
                     Date updateAt = memberDoc.getDate("updateAt");
-
-                    Member member = new Member(user, addedBy, status);
+                    Member member = new Member(user.getId(), addedBy.getId(), status);
                     member.setCreateAt(createAt);
                     member.setUpdateAt(updateAt);
                     return member;
@@ -423,7 +424,7 @@ public class GroupService implements IGroupService {
                 Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
                 Aggregation.group().count().as("count")
         );
-        return CompletableFuture.completedFuture(mongoTemplate.aggregate(aggregation, Group.class, Document.class).getUniqueMappedResult().getInteger("count"));
+        return CompletableFuture.completedFuture(Objects.requireNonNull(mongoTemplate.aggregate(aggregation, Group.class, Document.class).getUniqueMappedResult()).getInteger("count"));
     }
 
     @Override
@@ -523,7 +524,7 @@ public class GroupService implements IGroupService {
             }
             group.getRoles().remove(roleFilter);
             groupRepository.save(group);
-            Message mess = new Message(roleName + " has remove!"  , group.getCode(), CONSTS.DELETE_ROLE);
+            Message mess = new Message(roleName + " has remove!", group.getCode(), CONSTS.DELETE_ROLE);
             mess = messageRepository.save(mess);
             simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.DELETE_ROLE));
             return null;

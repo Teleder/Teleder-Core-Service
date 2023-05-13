@@ -3,6 +3,7 @@ package teleder.core.models.Message;
 import lombok.Data;
 import lombok.NonNull;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import teleder.core.models.BaseModel;
@@ -25,38 +26,42 @@ public class Message extends BaseModel implements Comparable<Message> {
     private String code;
     @NonNull
     private String TYPE;
-    @DBRef
+    private String userId_send;
+    private String userId_receive;
+    @Transient
     private User user_send;
-    @DBRef
+    @Transient
     private User user_receive;
     @DBRef
     List<Message> replyMessages = new ArrayList<>();
-    @DBRef
+    private String groupId;
+    @Transient
     private Group group;
     @DBRef
     private File file;
     String idParent = null;
     Date readAt = null;
-    Date deliveredAt =null;
+    Date deliveredAt = null;
 
     private List<Emotion> list_emotion = new ArrayList<>();
     private List<HistoryChange> historyChanges = new ArrayList<>();
+
     public Message() {
     }
-    public User getUser_receive() {
-        if (this.user_receive == null)
-            return null;
-        return new User(user_receive.getId(), user_receive.getFirstName(), user_receive.getLastName(),
-                user_receive.getDisplayName(), user_receive.getBio(), user_receive.getAvatar(), user_receive.getQr(), user_receive.isActive(), user_receive.getLastActiveAt());
-    }
-
-    public User getUser_send() {
-        if (this.user_send == null)
-            return null;
-        return new User(user_send.getId(), user_send.getFirstName(), user_send.getLastName(),
-                user_send.getDisplayName(), user_send.getBio(), user_send.getAvatar(), user_send.getQr(), user_send.isActive(), user_send.getLastActiveAt())
-                ;
-    }
+//    public String getString_receive() {
+//        if (this.userId_receive == null)
+//            return null;
+//        return new String(userId_receive.getId(), userId_receive.getFirstName(), userId_receive.getLastName(),
+//                userId_receive.getDisplayName(), userId_receive.getBio(), userId_receive.getAvatar(), userId_receive.getQr(), userId_receive.isActive(), userId_receive.getLastActiveAt());
+//    }
+//
+//    public String getString_send() {
+//        if (this.userId_send == null)
+//            return null;
+//        return new String(userId_send.getId(), userId_send.getFirstName(), userId_send.getLastName(),
+//                userId_send.getDisplayName(), userId_send.getBio(), userId_send.getAvatar(), userId_send.getQr(), userId_send.isActive(), userId_send.getLastActiveAt())
+//                ;
+//    }
 
     public Message(String content, String code, String TYPE) {
         this.code = code;
@@ -64,28 +69,19 @@ public class Message extends BaseModel implements Comparable<Message> {
         this.TYPE = TYPE;
     }
 
-    public Message(String content, String code, String TYPE, User user_send, User user_receive, List<Message> replyMessages, File file) {
-        this.code = code;
-        this.content = content;
-        this.TYPE = TYPE;
-        this.user_send = user_send;
-        this.user_receive = user_receive;
-        this.replyMessages = replyMessages;
-        this.file = file;
-    }
 
-    public Message(String content, String code, String TYPE, User user_send, Group group, List<Message> replyMessages, File file) {
+    public Message(String content, String code, String TYPE, String userId_send, String groupId, List<Message> replyMessages, File file) {
         this.code = code;
         this.content = content;
         this.TYPE = TYPE;
-        this.user_send = user_send;
-        this.group = group;
+        this.userId_send = userId_send;
+        this.groupId = groupId;
         this.replyMessages = replyMessages;
         this.file = file;
     }
 
     @Override
     public int compareTo(Message o) {
-       return this.getCreateAt().compareTo(o.getCreateAt());
+        return this.getCreateAt().compareTo(o.getCreateAt());
     }
 }

@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,24 +15,33 @@ import teleder.core.config.JwtTokenUtil;
 import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.exceptions.UnauthorizedException;
+import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.User.dtos.UserProfileDto;
 
 import java.util.List;
 
+import static teleder.core.utils.PopulateDocument.populateConservation;
+
 @RestController
 @ApiPrefixController("/auth")
 public class AuthController {
 
-    @Autowired
-    private JwtTokenUtil jwtUtil;
+    private final JwtTokenUtil jwtUtil;
 
-    @Autowired
-    private IUserRepository userRepository;
+    private final IUserRepository userRepository;
 
-    @Autowired
-    private ModelMapper toDto;
+    private final ModelMapper toDto;
+    final
+    MongoTemplate mongoTemplate;
+
+    public AuthController(JwtTokenUtil jwtUtil, IUserRepository userRepository, ModelMapper toDto, MongoTemplate mongoTemplate) {
+        this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
+        this.toDto = toDto;
+        this.mongoTemplate = mongoTemplate;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid LoginInputDto loginRequest) throws Exception {
@@ -45,6 +55,9 @@ public class AuthController {
         final String accessToken = jwtUtil.generateAccessToken(users.get(0));
         final String refreshToken = jwtUtil.generateRefreshToken(users.get(0));
         toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        for (Conservation con : users.get(0).getConservations()) {
+            populateConservation(mongoTemplate, con );
+        }
         return ResponseEntity.ok(new LoginDto(accessToken, refreshToken, toDto.map(users.get(0), UserProfileDto.class)));
     }
 

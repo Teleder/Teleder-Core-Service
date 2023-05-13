@@ -3,6 +3,7 @@ package teleder.core.models.Group;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import teleder.core.models.User.User;
@@ -15,24 +16,19 @@ public class Member {
     Status status;
     @Indexed(unique = true)
     private String userId;
+    @Transient
+    private User user;
     @CreatedBy
     private Date createAt = new Date();
     @LastModifiedDate
     private Date updateAt = new Date();
-    @DBRef
-    private User addedBy;
-
-    User user;
-    public Member(String userId, User addedBy, Status status) {
+    private String addedByUserId;
+    public Member(String userId, String addedByUserId, Status status) {
         this.userId = userId;
-        this.addedBy = addedBy;
+        this.addedByUserId = addedByUserId;
         this.status = status;
     }
-    public Member(User user, User addedBy, Status status) {
-        this.user = user;
-        this.addedBy = addedBy;
-        this.status = status;
-    }
+
     public enum Status {
         ACCEPT,
         WAITING,

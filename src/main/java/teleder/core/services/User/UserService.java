@@ -33,7 +33,6 @@ import teleder.core.models.User.Block;
 import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
-import teleder.core.repositories.IFileRepository;
 import teleder.core.repositories.IMessageRepository;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.File.IFileService;
@@ -50,6 +49,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import static teleder.core.utils.PopulateDocument.populateConservation;
+
 @Service
 public class UserService implements IUserService, UserDetailsService {
     final SimpMessagingTemplate simpMessagingTemplate;
@@ -60,10 +61,14 @@ public class UserService implements IUserService, UserDetailsService {
     final
     IConservationRepository conservationRepository;
     private final ModelMapper toDto;
-    private final IFileRepository iFileRepository;
 
-    public UserService(SimpMessagingTemplate simpMessagingTemplate, IUserRepository userRepository, IFileService fileService, IMessageRepository messageRepository, MongoTemplate mongoTemplate, IConservationRepository conservationRepository, ModelMapper toDto,
-                       IFileRepository iFileRepository) {
+    public UserService(SimpMessagingTemplate simpMessagingTemplate,
+                       IUserRepository userRepository,
+                       IFileService fileService,
+                       IMessageRepository messageRepository,
+                       MongoTemplate mongoTemplate,
+                       IConservationRepository conservationRepository,
+                       ModelMapper toDto) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.userRepository = userRepository;
         this.fileService = fileService;
@@ -71,7 +76,6 @@ public class UserService implements IUserService, UserDetailsService {
         this.mongoTemplate = mongoTemplate;
         this.conservationRepository = conservationRepository;
         this.toDto = toDto;
-        this.iFileRepository = iFileRepository;
     }
 
     @Override
@@ -100,7 +104,9 @@ public class UserService implements IUserService, UserDetailsService {
         User user = userRepository.findById(id).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user!");
-
+        for (Conservation con : user.getConservations()) {
+            populateConservation(mongoTemplate, con);
+        }
         return CompletableFuture.completedFuture(toDto.map(user, UserProfileDto.class));
     }
 
@@ -111,7 +117,7 @@ public class UserService implements IUserService, UserDetailsService {
         User contact = userRepository.findById(contactId).orElseThrow(() -> new NotFoundException("Not found user!"));
         boolean flag = false;
         for (Contact c : user.getList_contact()) {
-            if (c.getUser().getId().equals(contactId)) {
+            if (c.getUserId().equals(contactId)) {
                 if (c.getStatus().equals(Contact.Status.WAITING)) {
                     user.getList_contact().remove(c);
                     userRepository.save(user);
@@ -126,7 +132,7 @@ public class UserService implements IUserService, UserDetailsService {
         if (!flag)
             throw new BadRequestException("Cannot remove request friend!");
         for (Contact c : contact.getList_contact()) {
-            if (c.getUser().getId().equals(userId)) {
+            if (c.getUserId().equals(userId)) {
                 contact.getList_contact().remove(c);
                 break;
             }
@@ -138,16 +144,16 @@ public class UserService implements IUserService, UserDetailsService {
     @Async
     public CompletableFuture<Boolean> addContact(String contactId) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        if (userId == contactId)
+        if (userId.equals(contactId))
             throw new BadRequestException("Cannot add friend self");
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user!"));
         User contact = userRepository.findById(contactId).orElseThrow(() -> new NotFoundException("Not found contact!"));
         for (Contact c : user.getList_contact()) {
-            if (c.getUser().getId().equals(contactId))
+            if (c.getUserId().equals(contactId))
                 throw new BadRequestException("Cannot perform this action");
         }
-        user.getList_contact().add(new Contact(contact, Contact.Status.WAITING));
-        contact.getList_contact().add(new Contact(user, Contact.Status.REQUEST));
+        user.getList_contact().add(new Contact(contactId, Contact.Status.WAITING));
+        contact.getList_contact().add(new Contact(userId, Contact.Status.REQUEST));
         userRepository.save(user);
         userRepository.save(contact);
         simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.MESSAGE_GROUP));
@@ -164,9 +170,9 @@ public class UserService implements IUserService, UserDetailsService {
             User user = userOptional.get();
             User contact = contactOptional.get();
             // them vao danh sach chan
-            user.getBlocks().add(new Block(contact, reason));
+            user.getBlocks().add(new Block(contact_id, reason));
             for (Conservation x : user.getConservations()) {
-                if (x.getUser_2().getId().contains(contact.getId()) || x.getUser_1().getId().contains(contact.getId())) {
+                if (x.getUserId_2().equals(contact.getId()) || x.getUserId_1().equals(contact.getId())) {
                     x.setStatus(false);
                     conservationRepository.save(x);
                     break;
@@ -209,7 +215,7 @@ public class UserService implements IUserService, UserDetailsService {
 
             Block blockToRemove = null;
             for (Block block : user.getBlocks()) {
-                if (block.getUser().getId().contains(contact.getId())) {
+                if (block.getUserId().equals(contact.getId())) {
                     blockToRemove = block;
                     break;
                 }
@@ -221,14 +227,14 @@ public class UserService implements IUserService, UserDetailsService {
             // Kiểm tra xem bên kia có chặn không nếu có thì vẫn để status = false nếu 2 bên không chặn nhau thì set lại status
             blockToRemove = null;
             for (Block block : contact.getBlocks()) {
-                if (block.getUser().getId().contains(user.getId())) {
+                if (block.getUserId().equals(user.getId())) {
                     blockToRemove = block;
                     break;
                 }
             }
             if (blockToRemove != null) {
                 Conservation conservation = user.getConservations().stream()
-                        .filter(x -> x.getUser_1().getId().contains(contact.getId()) || x.getUser_2().getId().contains(contact.getId()))
+                        .filter(x -> x.getUserId_1().contains(contact.getId()) || x.getUserId_2().contains(contact.getId()))
                         .findFirst().orElse(null);
                 if (conservation == null)
                     throw new NotFoundException("Not found Conservation");
@@ -251,8 +257,7 @@ public class UserService implements IUserService, UserDetailsService {
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user!"));
         List<String> listContact = user.getList_contact()
                 .stream()
-                .filter(x -> x.getStatus().equals(Contact.Status.ACCEPT))
-                .map(x -> x.getUser().getId()).toList();
+                .filter(x -> x.getStatus().equals(Contact.Status.ACCEPT)).map(Contact::getUserId).toList();
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("displayName").regex(displayName, "i").and("_id").in(listContact)),
                 Aggregation.sort(Sort.Direction.ASC, "displayName"),
@@ -282,10 +287,11 @@ public class UserService implements IUserService, UserDetailsService {
         );
 
         List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
-        long totalCount = userRepository.findById(userId).get().getList_contact().stream().filter(x -> x.getStatus() == Contact.Status.REQUEST).count();
+        long totalCount = userRepository.findById(userId).orElseThrow(() -> new BadRequestException("Cannot count user")).getList_contact().stream().filter(x -> x.getStatus() == Contact.Status.REQUEST).count();
         return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts));
     }
 
+    // TODO: 8/12/2021 fix
     @Override
     public CompletableFuture<Boolean> responseToRequestForContacts(String contact_id, Boolean accept) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
@@ -296,7 +302,7 @@ public class UserService implements IUserService, UserDetailsService {
             throw new NotFoundException("Not found user");
         if (!accept) {
             for (Contact f : user.getList_contact()) {
-                if (f.getUser().getId().contains(contact.getId())) {
+                if (f.getUserId().contains(contact.getId())) {
                     friend = f;
                     break;
                 }
@@ -306,7 +312,7 @@ public class UserService implements IUserService, UserDetailsService {
                 userRepository.save(user);
             }
             for (Contact f : contact.getList_contact()) {
-                if (f.getUser().getId().contains(user.getId())) {
+                if (f.getUserId().contains(user.getId())) {
                     friend = f;
                     break;
                 }
@@ -319,14 +325,14 @@ public class UserService implements IUserService, UserDetailsService {
             return CompletableFuture.completedFuture(false);
         } else {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            Conservation conservation = new Conservation(user, contact, null);
+            Conservation conservation = new Conservation(userId, contact_id, null);
             conservation.setCode(UUID.randomUUID().toString());
             Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
             mess = messageRepository.save(mess);
             conservation.setLastMessage(mess);
             conservation = conservationRepository.save(conservation);
             for (Contact f : user.getList_contact()) {
-                if (f.getUser().getId().contains(contact.getId())) {
+                if (f.getUserId().contains(contact.getId())) {
                     f.setStatus(Contact.Status.ACCEPT);
                     user.getConservations().add(conservation);
                     userRepository.save(user);
@@ -334,7 +340,7 @@ public class UserService implements IUserService, UserDetailsService {
                 }
             }
             for (Contact f : contact.getList_contact()) {
-                if (f.getUser().getId().contains(user.getId())) {
+                if (f.getUserId().contains(user.getId())) {
                     f.setStatus(Contact.Status.ACCEPT);
                     contact.getConservations().add(conservation);
                     userRepository.save(contact);
@@ -428,7 +434,7 @@ public class UserService implements IUserService, UserDetailsService {
     private void unContact(User user, User contact) {
         Contact contactToRemove = null;
         for (Contact cont : user.getList_contact()) {
-            if (cont.getUser().getId().contains(contact.getId())) {
+            if (cont.getUserId().equals(contact.getId())) {
                 contactToRemove = cont;
                 break;
             }
@@ -439,7 +445,7 @@ public class UserService implements IUserService, UserDetailsService {
         }
 
         for (Contact cont : contact.getList_contact()) {
-            if (cont.getUser().getId().contains(user.getId())) {
+            if (cont.getUserId().equals(user.getId())) {
                 contactToRemove = cont;
                 break;
             }
