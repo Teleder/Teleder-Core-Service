@@ -128,6 +128,13 @@ public class UserController {
     }
 
     @Authenticate
+    @PatchMapping(value = "/remove-request-friend", produces = MediaType.APPLICATION_JSON_VALUE)
+    public CompletableFuture<UserProfileDto> removeRequestFriend( String contactId) {
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return userService.removeRequestFriend(userId, contactId);
+    }
+
+    @Authenticate
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
     public CompletableFuture<List<UserSearchDto>> searchUser(@RequestParam String searchText) {
         return userService.searchUser(searchText);

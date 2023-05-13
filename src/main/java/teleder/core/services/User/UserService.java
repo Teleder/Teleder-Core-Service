@@ -106,6 +106,36 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     @Async
+    public CompletableFuture<UserProfileDto> removeRequestFriend(String userId, String contactId) {
+        User user = userRepository.findById(contactId).orElseThrow(() -> new NotFoundException("Not found contact!"));
+        User contact = userRepository.findById(contactId).orElseThrow(() -> new NotFoundException("Not found user!"));
+        boolean flag = false;
+        for (Contact c : user.getList_contact()) {
+            if (c.getUser().getId().equals(contactId)) {
+                if (c.getStatus().equals(Contact.Status.REQUEST)) {
+                    user.getList_contact().remove(c);
+                    userRepository.save(user);
+                    userRepository.save(contact);
+                    flag = true;
+                    break;
+                } else {
+                    throw new BadRequestException("Cannot remove request friend!");
+                }
+            }
+        }
+        if (!flag)
+            throw new BadRequestException("Cannot remove request friend!");
+        for (Contact c : contact.getList_contact()) {
+            if (c.getUser().getId().equals(userId)) {
+                contact.getList_contact().remove(c);
+                break;
+            }
+        }
+        return CompletableFuture.completedFuture(toDto.map(user, UserProfileDto.class));
+    }
+
+    @Override
+    @Async
     public CompletableFuture<Boolean> addContact(String contactId) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         if (userId == contactId)

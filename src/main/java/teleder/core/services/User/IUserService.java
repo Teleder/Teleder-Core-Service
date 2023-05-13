@@ -36,4 +36,5 @@ public interface IUserService extends IMongoService<UserDto, CreateUserDto, Upda
 
     public CompletableFuture<List<Contact>> getListContactRequestSend();
     public CompletableFuture<List<UserSearchDto>> searchUser(String searchText);
+    public CompletableFuture<UserProfileDto> removeRequestFriend(String userId, String contactId);
 }
