@@ -112,7 +112,7 @@ public class UserService implements IUserService, UserDetailsService {
         boolean flag = false;
         for (Contact c : user.getList_contact()) {
             if (c.getUser().getId().equals(contactId)) {
-                if (c.getStatus().equals(Contact.Status.REQUEST)) {
+                if (c.getStatus().equals(Contact.Status.WAITING)) {
                     user.getList_contact().remove(c);
                     userRepository.save(user);
                     userRepository.save(contact);
