@@ -18,6 +18,7 @@ public class CONSTS {
     public final static String CALL = "CALL";
     public final static String IMAGE = "IMAGE";
     public final static String AUDIO = "AUDIO";
+    public final static String  VIDEO = "VIDEO";
     public final static String FILE = "FILE";
     public final static String CUSTOM = "CUSTOM";
     public final static String CALL_TYPE_VIDEO = "CALL_TYPE.VIDEO";

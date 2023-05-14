@@ -1,15 +1,12 @@
 package teleder.core.services.User.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import org.joda.time.DateTime;
 import teleder.core.models.File.File;
 
 @Data
-public class UserSearchDto {
+public class UserBasicDto {
     @JsonProperty(value = "createAt")
     public DateTime createAt;
     @JsonProperty(value = "updateAt")

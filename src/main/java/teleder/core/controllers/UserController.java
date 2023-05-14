@@ -101,9 +101,9 @@ public class UserController {
 
     @Authenticate
     @GetMapping(value = "/contacts", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<PagedResultDto<UserSearchDto>> getListContact(@RequestParam(name = "displayName", defaultValue = "") String displayName,
-                                                                     @RequestParam(name = "page", defaultValue = "0") int page,
-                                                                     @RequestParam(name = "size", defaultValue = "10") int size) {
+    public CompletableFuture<PagedResultDto<UserBasicDto>> getListContact(@RequestParam(name = "displayName", defaultValue = "") String displayName,
+                                                                          @RequestParam(name = "page", defaultValue = "0") int page,
+                                                                          @RequestParam(name = "size", defaultValue = "10") int size) {
         return userService.getListContact(displayName, page * size, size);
     }
 
@@ -136,7 +136,7 @@ public class UserController {
 
     @Authenticate
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<List<UserSearchDto>> searchUser(@RequestParam String searchText) {
+    public CompletableFuture<List<UserBasicDto>> searchUser(@RequestParam String searchText) {
         return userService.searchUser(searchText);
     }
 }

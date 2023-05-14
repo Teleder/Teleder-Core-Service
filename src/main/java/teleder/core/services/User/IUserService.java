@@ -1,11 +1,8 @@
 package teleder.core.services.User;
 
 import com.google.zxing.WriterException;
-import jakarta.servlet.http.HttpServletRequest;
-import teleder.core.dtos.BlockContactDto;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.models.User.Contact;
-import teleder.core.models.User.User;
 import teleder.core.services.IMongoService;
 import teleder.core.services.User.dtos.*;
 
@@ -28,13 +25,13 @@ public interface IUserService extends IMongoService<UserDto, CreateUserDto, Upda
 
     CompletableFuture<Boolean> removeBlock(String contactId);
 
-    public CompletableFuture<PagedResultDto<UserSearchDto>> getListContact(String displayName, long skip, int limit);
+    public CompletableFuture<PagedResultDto<UserBasicDto>> getListContact(String displayName, long skip, int limit);
 
     public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept( long skip, int limit);
 
     public CompletableFuture<Boolean> responseToRequestForContacts(String contact_id, Boolean accept);
 
     public CompletableFuture<List<Contact>> getListContactRequestSend();
-    public CompletableFuture<List<UserSearchDto>> searchUser(String searchText);
+    public CompletableFuture<List<UserBasicDto>> searchUser(String searchText);
     public CompletableFuture<UserProfileDto> removeRequestFriend(String userId, String contactId);
 }

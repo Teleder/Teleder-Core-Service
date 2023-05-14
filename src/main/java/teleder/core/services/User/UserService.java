@@ -249,7 +249,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<PagedResultDto<UserSearchDto>> getListContact(String displayName, long skip, int limit) {
+    public CompletableFuture<PagedResultDto<UserBasicDto>> getListContact(String displayName, long skip, int limit) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
 //        MatchOperation matchOperation = Aggregation.match(
 //                Criteria.where("list_contact.user.displayName").regex(displayName, "i").and("_id").is(userId)
@@ -266,7 +266,7 @@ public class UserService implements IUserService, UserDetailsService {
         );
         List<User> contacts = mongoTemplate.aggregate(aggregation, "User", User.class).getMappedResults();
         long totalCount = user.getList_contact().stream().filter(x -> x.getStatus().equals(Contact.Status.ACCEPT)).toList().size();
-        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts.stream().map(x -> toDto.map(x, UserSearchDto.class)).toList()));
+        return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts.stream().map(x -> toDto.map(x, UserBasicDto.class)).toList()));
     }
 
     @Override
@@ -354,7 +354,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Async
     @Override
-    public CompletableFuture<List<UserSearchDto>> searchUser(String searchText) {
+    public CompletableFuture<List<UserBasicDto>> searchUser(String searchText) {
         Criteria criteria = new Criteria();
         criteria.orOperator(
                 Criteria.where("phone").regex(searchText, "i"),
@@ -363,7 +363,7 @@ public class UserService implements IUserService, UserDetailsService {
         Query query = new Query(criteria);
         List<User> users = mongoTemplate.find(query, User.class);
         toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        return CompletableFuture.completedFuture(users.stream().map(x -> toDto.map(x, UserSearchDto.class)).toList());
+        return CompletableFuture.completedFuture(users.stream().map(x -> toDto.map(x, UserBasicDto.class)).toList());
     }
 
     @Override
