@@ -107,6 +107,9 @@ public class UserService implements IUserService, UserDetailsService {
         for (Conservation con : user.getConservations()) {
             populateConservation(mongoTemplate, con);
         }
+        for (Contact c : user.getList_contact()) {
+            c.setUser(toDto.map(userRepository.findById(c.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user")), UserBasicDto.class));
+        }
         return CompletableFuture.completedFuture(toDto.map(user, UserProfileDto.class));
     }
 

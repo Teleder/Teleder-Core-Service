@@ -120,7 +120,7 @@ public class MessageService implements IMessageService {
                 User contact = userRepository.findById(input.getReceiverId()).orElse(null);
                 if (contact == null)
                     throw new NotFoundException("Not found user");
-                if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+                if (input.getReceiverType().equals(CONSTS.MESSAGE_GROUP))
                     simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 else
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
@@ -177,7 +177,7 @@ public class MessageService implements IMessageService {
                 return CompletableFuture.completedFuture(mess);
             }
         }
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.completedFuture(input);
     }
 
     @Async

@@ -16,8 +16,10 @@ import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.exceptions.UnauthorizedException;
 import teleder.core.models.Conservation.Conservation;
+import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IUserRepository;
+import teleder.core.services.User.dtos.UserBasicDto;
 import teleder.core.services.User.dtos.UserProfileDto;
 
 import java.util.List;
@@ -57,6 +59,9 @@ public class AuthController {
         toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         for (Conservation con : users.get(0).getConservations()) {
             populateConservation(mongoTemplate, con );
+        }
+        for (Contact c : users.get(0).getList_contact()) {
+            c.setUser(toDto.map(userRepository.findById(c.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user")), UserBasicDto.class));
         }
         return ResponseEntity.ok(new LoginDto(accessToken, refreshToken, toDto.map(users.get(0), UserProfileDto.class)));
     }
