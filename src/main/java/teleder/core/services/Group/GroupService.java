@@ -1,6 +1,7 @@
 package teleder.core.services.Group;
 
 import org.bson.Document;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -26,11 +27,14 @@ import teleder.core.models.Group.Role;
 import teleder.core.models.Message.Message;
 import teleder.core.models.Permission.Action;
 import teleder.core.models.Permission.Permission;
+import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 import teleder.core.repositories.*;
 import teleder.core.services.Group.dtos.CreateGroupDto;
 import teleder.core.services.Group.dtos.GroupDto;
+import teleder.core.services.Group.dtos.RoleDto;
 import teleder.core.services.Group.dtos.UpdateGroupDto;
+import teleder.core.services.User.dtos.UserBasicDto;
 import teleder.core.utils.CONSTS;
 
 import java.util.ArrayList;
@@ -52,15 +56,17 @@ public class GroupService implements IGroupService {
     final IConservationRepository conservationRepository;
     final IPermissionRepository permissionRepository;
     final IMessageRepository messageRepository;
+    private final ModelMapper toDto;
     final MongoTemplate mongoTemplate;
 
-    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, IMessageRepository messageRepository, MongoTemplate mongoTemplate) {
+    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, IMessageRepository messageRepository, ModelMapper toDto, MongoTemplate mongoTemplate) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
         this.conservationRepository = conservationRepository;
         this.permissionRepository = permissionRepository;
         this.messageRepository = messageRepository;
+        this.toDto = toDto;
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -369,8 +375,8 @@ public class GroupService implements IGroupService {
                 groupRepository.save(group);
             }
             simpMessagingTemplate.convertAndSend("/messages/group." + groupId,
-                    SocketPayload.create(new ContactInfoDto(userRepository.findById(memberId).orElseThrow( () -> new NotFoundException("Not found user")))
-                    , CONSTS.DENY_MEMBER_JOIN));
+                    SocketPayload.create(new ContactInfoDto(userRepository.findById(memberId).orElseThrow(() -> new NotFoundException("Not found user")))
+                            , CONSTS.DENY_MEMBER_JOIN));
             return null;
         }
     }
@@ -473,10 +479,36 @@ public class GroupService implements IGroupService {
             throw new UnauthorizedException("You do not have permission to do that");
         }
     }
-
     @Override
     @Async
-    public CompletableFuture<Group> createRoleForGroup(String groupId, String roleName, List<Action> permissions) {
+    public CompletableFuture<List<UserBasicDto>> getNonBlockedNonMemberFriends(String userId, String groupId) {
+        // Get the user
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+
+        // Get the group
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new NotFoundException("Group not found"));
+
+        // Get the list of friend ids
+        List<String> friendIds = user.getList_contact().stream()
+                .map(Contact::getUserId)
+                .collect(Collectors.toList());
+
+        // Get the list of group member ids
+        List<String> groupMemberIds = group.getMembers().stream()
+                .map(Member::getUserId).toList();
+
+        // Get the list of blocked user ids
+        List<String> blockedUserIds = user.getBlocks().stream()
+                .map(teleder.core.models.User.Block::getUserId).toList();
+
+        // Get friends who are not in the group and not blocked
+        return CompletableFuture.completedFuture(userRepository.findAllById(friendIds).stream()
+                .filter(friend -> !groupMemberIds.contains(friend.getId()) && !blockedUserIds.contains(friend.getId())).toList()
+                .stream().map(x -> toDto.map(x, UserBasicDto.class)).toList());
+    }
+    @Override
+    @Async
+    public CompletableFuture<Group> createRoleForGroup(String groupId, RoleDto roleRequest) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElse(null);
         Group group = groupRepository.findById(groupId).orElse(null);
@@ -487,13 +519,13 @@ public class GroupService implements IGroupService {
         // check permission
         if (group.getUser_own().getId().contains(userId)) {
             List<Permission> pers = new ArrayList<>();
-            permissions.stream().forEach(x -> {
+            roleRequest.getPermissions().forEach(x -> {
                 pers.add(permissionRepository.findByAction(x));
             });
-            Role newRole = new Role(roleName, pers);
+            Role newRole = new Role(roleRequest.getRoleName(), pers);
             group.getRoles().add(newRole);
             groupRepository.save(group);
-            Message mess = new Message(user.getDisplayName() + " has added new role: " + roleName, group.getCode(), CONSTS.CREATE_ROLE);
+            Message mess = new Message(user.getDisplayName() + " has added new role: " + roleRequest.getRoleName(), group.getCode(), CONSTS.CREATE_ROLE);
             mess = messageRepository.save(mess);
             simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.CREATE_ROLE));
             return null;

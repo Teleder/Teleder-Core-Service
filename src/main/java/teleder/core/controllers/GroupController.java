@@ -1,15 +1,18 @@
 package teleder.core.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.annotations.ApiPrefixController;
 import teleder.core.annotations.Authenticate;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.dtos.Pagination;
 import teleder.core.models.Group.Group;
 import teleder.core.models.Group.Member;
-import teleder.core.models.Permission.Action;
 import teleder.core.services.Group.IGroupService;
+import teleder.core.services.Group.dtos.RoleDto;
+import teleder.core.services.User.dtos.UserBasicDto;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -18,14 +21,13 @@ import java.util.concurrent.ExecutionException;
 @RestController
 @ApiPrefixController("groups")
 public class GroupController {
-    @Autowired
+    final
     IGroupService groupService;
 
-//    @Authenticate
-//    @PostMapping("/")
-//    public CompletableFuture<Group> createGroup(@RequestBody Group input) {
-//        return groupService.createGroup(input);
-//    }
+    public GroupController(IGroupService groupService) {
+        this.groupService = groupService;
+    }
+
 
     @Authenticate
     @PatchMapping("/{id}/add-member")
@@ -34,43 +36,43 @@ public class GroupController {
     }
 
     @Authenticate
-    @PatchMapping("/{id}/block-member")
+    @PatchMapping("/{groupId}/block-member")
     public CompletableFuture<Group> blockMemberFromGroup(@PathVariable String groupId, @RequestParam String memberId, @RequestParam String reason) {
         return groupService.blockMemberFromGroup(groupId, memberId, reason);
     }
 
     @Authenticate
-    @PatchMapping("/{id}/remove-block-member")
+    @PatchMapping("/{groupId}/remove-block-member")
     public CompletableFuture<Group> removeBlockMemberFromGroup(@PathVariable String groupId, @RequestParam String memberId) {
         return groupService.removeBlockMemberFromGroup(groupId, memberId);
     }
 
     @Authenticate
-    @PatchMapping("/{id}/remove-member")
+    @PatchMapping("/{groupId}/remove-member")
     public CompletableFuture<Group> removeMemberFromGroup(@PathVariable String groupId, @RequestParam String memberId) {
         return groupService.removeMemberFromGroup(groupId, memberId);
     }
 
     @Authenticate
-    @PatchMapping("/{id}/decentralization")
+    @PatchMapping("/{groupId}/decentralization")
     public CompletableFuture<Group> decentralization(@PathVariable String groupId, @RequestParam String memberId, @RequestParam String roleName) {
         return groupService.decentralization(groupId, memberId, roleName);
     }
 
     @Authenticate
-    @GetMapping("/{id}/request-member-join")
+    @GetMapping("/{groupId}/request-member-join")
     public CompletableFuture<List<Member>> getRequestMemberJoin(@PathVariable String groupId, @RequestParam String memberId) {
         return groupService.getRequestMemberJoin(groupId, memberId);
     }
 
     @Authenticate
-    @PatchMapping("/{id}/response-member-join")
+    @PatchMapping("/{groupId}/response-member-join")
     public CompletableFuture<Void> responseMemberJoin(@PathVariable String groupId, @RequestParam String memberId, Boolean accept) {
         return groupService.responseMemberJoin(groupId, memberId, accept);
     }
 
     @Authenticate
-    @GetMapping("/{id}/members-paginate")
+    @GetMapping("/{groupId}/members-paginate")
     public PagedResultDto<Member> getMembersPaginate(@PathVariable String groupId, @RequestParam String search, @RequestParam long page, @RequestParam int size) {
         CompletableFuture<Integer> total = groupService.countMemberGroup(groupId, search);
         CompletableFuture<List<Member>> members = groupService.getMembersPaginate(groupId, search, page * size, size);
@@ -85,7 +87,7 @@ public class GroupController {
     }
 
     @Authenticate
-    @GetMapping("/{id}/groups-pagninate")
+    @GetMapping("/{groupId}/groups-paginate")
     public PagedResultDto<Group> getMyGroupsPaginate(@PathVariable String groupId, @RequestParam String search, @RequestParam long page, @RequestParam int size) {
         CompletableFuture<Long> total = groupService.countMyGroup();
         CompletableFuture<List<Group>> groups = groupService.getMyGroupsPaginate(groupId, search, page * size, size);
@@ -100,20 +102,27 @@ public class GroupController {
     }
 
     @Authenticate
-    @PatchMapping("/{id}/leave-group")
+    @PatchMapping("/{groupId}/leave-group")
     public CompletableFuture<Void> leaveGroup(@PathVariable String groupId) {
         return groupService.leaveGroup(groupId);
     }
 
     @Authenticate
-    @PostMapping("/{id}/create-role")
-    CompletableFuture<Group> createRoleForGroup(@PathVariable String groupId, String roleName, List<Action> permissions) {
-        return groupService.createRoleForGroup(groupId, roleName, permissions);
+    @PostMapping("/{groupId}/create-role")
+    CompletableFuture<Group> createRoleForGroup(@PathVariable String groupId, @RequestBody RoleDto roleRequest) {
+        return groupService.createRoleForGroup(groupId, roleRequest);
     }
 
     @Authenticate
-    @DeleteMapping("/{id}/delete-role")
+    @DeleteMapping("/{groupId}/delete-role")
     public CompletableFuture<Void> deleteRoleForGroup(@PathVariable String groupId, @RequestParam String roleName) {
         return groupService.deleteRoleForGroup(groupId, roleName);
+    }
+
+    @Authenticate
+    @GetMapping("/get-friend-add-group/{groupId}")
+    public CompletableFuture<List<UserBasicDto>> getNonBlockedNonMemberFriends(@PathVariable String groupId) {
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return groupService.getNonBlockedNonMemberFriends(userId, groupId);
     }
 }
