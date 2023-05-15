@@ -113,7 +113,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Async
     public CompletableFuture<UserProfileDto> removeRequestFriend(String userId, String contactId) {
-        User user = userRepository.findById(contactId).orElseThrow(() -> new NotFoundException("Not found contact!"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found contact!"));
         User contact = userRepository.findById(contactId).orElseThrow(() -> new NotFoundException("Not found user!"));
         boolean flag = false;
         for (Contact c : user.getList_contact()) {
@@ -281,12 +281,14 @@ public class UserService implements IUserService, UserDetailsService {
                 Aggregation.skip(skip),
                 Aggregation.limit(limit),
                 Aggregation.project()
-                        .and("_id").as("id")
-                        .and("list_contact.user").as("user")
+                        .and("_id").as("userId")
                         .and("list_contact.status").as("status")
         );
 
         List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
+        for (Contact contact : contacts) {
+            contact.setUser(toDto.map(userRepository.findById(contact.getUserId()).orElseThrow(() -> new NotFoundException("Not found user!")), UserBasicDto.class));
+        }
         long totalCount = userRepository.findById(userId).orElseThrow(() -> new BadRequestException("Cannot count user")).getList_contact().stream().filter(x -> x.getStatus() == Contact.Status.REQUEST).count();
         return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(totalCount, skip, limit), contacts));
     }
@@ -371,15 +373,17 @@ public class UserService implements IUserService, UserDetailsService {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(userId)),
-                Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.WAITING)),
                 Aggregation.unwind("list_contact"),
+                Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.WAITING)),
                 Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
                 Aggregation.project()
                         .and("_id").as("id")
-                        .and("list_contact.user").as("user")
                         .and("list_contact.status").as("status")
         );
         List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
+        for (Contact contact : contacts) {
+            contact.setUser(toDto.map(userRepository.findById(contact.getUserId()).orElseThrow(() -> new NotFoundException("Not found user!")), UserBasicDto.class));
+        }
         return CompletableFuture.completedFuture(contacts);
     }
 

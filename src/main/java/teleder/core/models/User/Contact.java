@@ -2,13 +2,14 @@ package teleder.core.models.User;
 
 import lombok.Data;
 import org.springframework.data.annotation.Transient;
+import teleder.core.services.User.dtos.UserBasicDto;
 
 @Data
 public class Contact {
     String userId;
     Status status;
     @Transient
-    User user;
+    UserBasicDto user;
 
     public Contact(String userId, Status status) {
         this.userId = userId;
