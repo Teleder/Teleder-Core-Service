@@ -272,12 +272,10 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     public CompletableFuture<PagedResultDto<Contact>> getListContactWaitingAccept(long skip, int limit) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(userId)),
-                Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.REQUEST)),
                 Aggregation.unwind("list_contact"),
-                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
+                Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.REQUEST)),
                 Aggregation.skip(skip),
                 Aggregation.limit(limit),
                 Aggregation.project()
