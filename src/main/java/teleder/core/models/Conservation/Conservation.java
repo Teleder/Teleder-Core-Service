@@ -27,6 +27,7 @@ public class Conservation extends BaseModel {
     @DBRef
     Message lastMessage;
     private String userId_1;
+    private String currentEmotion = "\uD83D\uDC4D";
     @Transient
     private User user_1;
     private String userId_2;
@@ -35,6 +36,7 @@ public class Conservation extends BaseModel {
     private String groupId;
     @Transient
     private Group group;
+
     public Conservation(String userId_1, String userId_2, String groupId) {
         this.userId_2 = userId_2;
         this.userId_1 = userId_1;

@@ -184,13 +184,11 @@ public class MessageService implements IMessageService {
     @Override
     public CompletableFuture<Message> sendGroupMessage(String groupId, PayloadMessage messagePayload) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        User user = userRepository.findById(userId).orElse(null);
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user"));
         Group group = iGroupRepository.findById(groupId).orElse(null);
         Conservation conservation = user.getConservations().stream()
                 .filter(x -> x.getGroupId().contains(groupId))
                 .findFirst().orElse(null);
-        if (user == null)
-            throw new NotFoundException("Not found user");
         if (conservation == null)
             throw new NotFoundException("Not found Conservation");
         Message message = new Message(messagePayload.getCode(), messagePayload.getContent(), messagePayload.getType(), userId, groupId, null, messagePayload.getFile());
