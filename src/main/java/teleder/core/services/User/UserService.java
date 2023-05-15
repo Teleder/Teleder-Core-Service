@@ -121,7 +121,6 @@ public class UserService implements IUserService, UserDetailsService {
                 if (c.getStatus().equals(Contact.Status.WAITING)) {
                     user.getList_contact().remove(c);
                     userRepository.save(user);
-                    userRepository.save(contact);
                     flag = true;
                     break;
                 } else {
@@ -134,6 +133,7 @@ public class UserService implements IUserService, UserDetailsService {
         for (Contact c : contact.getList_contact()) {
             if (c.getUserId().equals(userId)) {
                 contact.getList_contact().remove(c);
+                userRepository.save(contact);
                 break;
             }
         }
