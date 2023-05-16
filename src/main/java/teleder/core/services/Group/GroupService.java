@@ -1,7 +1,9 @@
 package teleder.core.services.Group;
 
+import com.google.zxing.WriterException;
 import org.bson.Document;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -14,12 +16,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 import teleder.core.dtos.ContactInfoDto;
 import teleder.core.dtos.SocketPayload;
 import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.exceptions.UnauthorizedException;
 import teleder.core.models.Conservation.Conservation;
+import teleder.core.models.File.File;
 import teleder.core.models.Group.Block;
 import teleder.core.models.Group.Group;
 import teleder.core.models.Group.Member;
@@ -30,18 +34,22 @@ import teleder.core.models.Permission.Permission;
 import teleder.core.models.User.Contact;
 import teleder.core.models.User.User;
 import teleder.core.repositories.*;
+import teleder.core.services.File.FileService;
 import teleder.core.services.Group.dtos.CreateGroupDto;
 import teleder.core.services.Group.dtos.GroupDto;
 import teleder.core.services.Group.dtos.RoleDto;
 import teleder.core.services.Group.dtos.UpdateGroupDto;
 import teleder.core.services.User.dtos.UserBasicDto;
 import teleder.core.utils.CONSTS;
+import teleder.core.utils.QRCodeGenerator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -56,28 +64,74 @@ public class GroupService implements IGroupService {
     final IConservationRepository conservationRepository;
     final IPermissionRepository permissionRepository;
     final IMessageRepository messageRepository;
+    final FileService fileService;
     private final ModelMapper toDto;
     final MongoTemplate mongoTemplate;
 
-    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, IMessageRepository messageRepository, ModelMapper toDto, MongoTemplate mongoTemplate) {
+    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, IMessageRepository messageRepository, FileService fileService, ModelMapper toDto, MongoTemplate mongoTemplate) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
         this.conservationRepository = conservationRepository;
         this.permissionRepository = permissionRepository;
         this.messageRepository = messageRepository;
+        this.fileService = fileService;
         this.toDto = toDto;
         this.mongoTemplate = mongoTemplate;
     }
 
     @Override
     @Async
-    public CompletableFuture<Group> createGroup(Group input) {
-        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null)
-            throw new NotFoundException("Not found user");
-        return CompletableFuture.completedFuture(groupRepository.save(input));
+    public CompletableFuture<GroupDto> createGroup(String userId, CreateGroupDto input) throws IOException, WriterException, ExecutionException, InterruptedException {
+        toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user"));
+        List<User> users = new ArrayList<>();
+        Group gr = toDto.map(input, Group.class);
+        List<Role> roles = new ArrayList<>();
+        roles.add(new Role("Member", new ArrayList<>()));
+        Role Owner = new Role("Owner", new ArrayList<>());
+        roles.add(Owner);
+        gr.setUser_own(user);
+        List<Member> members = new ArrayList<>();
+        List<Message> messages = new ArrayList<>();
+        members.add(new Member(userId, ACCEPT, Owner, null));
+        messages.add(new Message(user.getDisplayName() + " has created group", "2", CONSTS.ADD_CONTACT));
+        for (Member mem : input.getMember()) {
+            members.add(new Member(mem.getUserId(), ACCEPT, roles.iterator().next(), userId));
+            messages.add(new Message(user.getDisplayName() + "added " + userRepository.findById(mem.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user")).getDisplayName() + " to group", "2", CONSTS.ADD_CONTACT));
+        }
+        gr.setMembers(members);
+        gr.setRoles(roles);
+        int width = 300;
+        int height = 300;
+        MultipartFile qrCodeImage = QRCodeGenerator.generateQRCodeImage(input.getBio(), width, height);
+        File file = fileService.uploadFileLocal(qrCodeImage, input.getBio()).get();
+        gr.setQR(file.getUrl());
+        gr.setUser_own(user);
+        gr = groupRepository.save(gr);
+        Conservation conservation = new Conservation(gr.getId());
+        conservation = conservationRepository.save(conservation);
+        for (Message me : messages) {
+            me.setCode(conservation.getCode());
+        }
+        for (Member mem : input.getMember()) {
+            User member = userRepository.findById(mem.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user"));
+            member.getConservations().add(conservation.getId());
+            users.add(member);
+        }
+        messages = messageRepository.saveAll(messages);
+        conservation.setLastMessage(messages.get(messages.size() - 1));
+        conservationRepository.save(conservation);
+        user.getConservations().add(conservation.getId());
+        users.add(user);
+        userRepository.saveAll(users);
+        conservation.setGroupId(gr.getId());
+        conservation.setGroup(toDto.map(gr, GroupDto.class));
+        simpMessagingTemplate.convertAndSend("/messages/users." + user.getId(), SocketPayload.create(conservation, CONSTS.NEW_GROUP));
+        for (Member mem : input.getMember()) {
+            simpMessagingTemplate.convertAndSend("/messages/users." + mem.getUserId(), SocketPayload.create(conservation, CONSTS.NEW_GROUP));
+        }
+        return CompletableFuture.completedFuture(toDto.map(gr, GroupDto.class));
     }
 
     @Override
@@ -92,7 +146,7 @@ public class GroupService implements IGroupService {
         if (group == null)
             throw new NotFoundException("Not found group");
         if (userId != null) {
-            user = userRepository.findById(userId).orElse(null);
+            user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user"));
             // check user exist
             Member memberFilter = group.getMembers().stream()
                     .filter(x -> x.getUserId().contains(userId))
@@ -107,7 +161,7 @@ public class GroupService implements IGroupService {
                 throw new BadRequestException("User has been block with reason: " + blockFilter.getReason() + " ,Please unlock if you are admin or member has permission to unlock before add new member");
             if (group.isPublic() || user.getId().contains(group.getUser_own().getId())) {
                 group.getMembers().add(new Member(memberId, userId, Member.Status.ACCEPT));
-                member.getConservations().add(new Conservation(groupId, group.getCode()));
+                member.getConservations().add(conservationRepository.findByGroupId(group.getId()).orElseThrow(() -> new NotFoundException("Not found conservation")).getId());
                 // add conservation to user
                 Message mess = new Message(user.getDisplayName() != null ? "User" : user.getDisplayName() + " added " + member.getDisplayName() + " to group", group.getCode(), CONSTS.ADD_MEMBER_TO_GROUP);
                 mess = messageRepository.save(mess);
@@ -233,9 +287,9 @@ public class GroupService implements IGroupService {
             }
             group.getMembers().remove(mem1);
             // xoa khoi conservation
-            Conservation conservation = null;
-            for (Conservation cons : member.getConservations()) {
-                if (cons.getCode().contains(group.getCode())) {
+            String conservation = null;
+            for (String cons : member.getConservations()) {
+                if (cons.equals(group.getId())) {
                     conservation = cons;
                     break;
                 }
@@ -351,7 +405,7 @@ public class GroupService implements IGroupService {
             Conservation conservation = conservationRepository.findByCode(group.getCode());
             if (conservation == null)
                 throw new NotFoundException("Not found conservation");
-            user.getConservations().add(conservation);
+            user.getConservations().add(conservation.getId());
             userRepository.save(user);
             groupRepository.save(group);
             Message mess = new Message(user.getDisplayName() + "has join group", group.getCode(), CONSTS.ACCEPT_MEMBER_JOIN);
@@ -479,6 +533,7 @@ public class GroupService implements IGroupService {
             throw new UnauthorizedException("You do not have permission to do that");
         }
     }
+
     @Override
     @Async
     public CompletableFuture<List<UserBasicDto>> getNonBlockedNonMemberFriends(String userId, String groupId) {
@@ -506,6 +561,7 @@ public class GroupService implements IGroupService {
                 .filter(friend -> !groupMemberIds.contains(friend.getId()) && !blockedUserIds.contains(friend.getId())).toList()
                 .stream().map(x -> toDto.map(x, UserBasicDto.class)).toList());
     }
+
     @Override
     @Async
     public CompletableFuture<Group> createRoleForGroup(String groupId, RoleDto roleRequest) {
@@ -565,6 +621,20 @@ public class GroupService implements IGroupService {
         }
     }
 
+    @Override
+    @Async
+    public CompletableFuture<GroupDto> getDetailGroup(String userId, String groupId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new NotFoundException("Group not found"));
+        Member memberFilter = group.getMembers().stream()
+                .filter(x -> x.getUserId().contains(userId))
+                .findFirst().orElse(null);
+        if (memberFilter != null) {
+            throw new BadRequestException("You are not a member of this group");
+
+        }
+        return CompletableFuture.completedFuture(toDto.map(group, GroupDto.class));
+    }
 
     // Basic CRUD
     @Override
@@ -618,9 +688,9 @@ public class GroupService implements IGroupService {
         }
         group.getMembers().remove(mem1);
         // xoa khoi conservation
-        Conservation conservation = null;
-        for (Conservation cons : user.getConservations()) {
-            if (cons.getCode().contains(group.getCode())) {
+        String conservation = null;
+        for (String cons : user.getConservations()) {
+            if (cons.equals(group.getId())) {
                 conservation = cons;
                 break;
             }

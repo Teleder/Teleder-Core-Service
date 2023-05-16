@@ -38,7 +38,7 @@ public class UserProfileDto {
     @JsonProperty(value = "blocks")
     private List<Block> blocks;
     @JsonProperty(value = "conservations")
-    private List<Conservation> conservations = new ArrayList<>();
+    private List<String>conservations;
     @JsonProperty(value = "list_contact")
     private List<Contact> list_contact = new ArrayList<>();
     @JsonProperty(value = "role")

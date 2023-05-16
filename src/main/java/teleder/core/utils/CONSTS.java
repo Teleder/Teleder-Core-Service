@@ -10,6 +10,7 @@ public class CONSTS {
     public final static String READ_RECEIPT = "read";
     public final static String DELIVERY_RECEIPT = "delivery";
     public final static String CHATTING = "CHATTING";
+    public final static String NEW_GROUP = "NEW_GROUP";
     public final static String STOP_CHATTING = "STOP_CHATTING";
     public final static String EMOJI = "EMOJI";
     public final static String EDIT_MESSAGE = "EDIT_MESSAGE";

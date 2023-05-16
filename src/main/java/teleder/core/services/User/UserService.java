@@ -49,8 +49,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static teleder.core.utils.PopulateDocument.populateConservation;
-
 @Service
 public class UserService implements IUserService, UserDetailsService {
     final SimpMessagingTemplate simpMessagingTemplate;
@@ -104,9 +102,7 @@ public class UserService implements IUserService, UserDetailsService {
         User user = userRepository.findById(id).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user!");
-        for (Conservation con : user.getConservations()) {
-            populateConservation(mongoTemplate, con);
-        }
+
         for (Contact c : user.getList_contact()) {
             c.setUser(toDto.map(userRepository.findById(c.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user")), UserBasicDto.class));
         }
@@ -174,13 +170,11 @@ public class UserService implements IUserService, UserDetailsService {
             User contact = contactOptional.get();
             // them vao danh sach chan
             user.getBlocks().add(new Block(contact_id, reason));
-            for (Conservation x : user.getConservations()) {
-                if (x.getUserId_2().equals(contact.getId()) || x.getUserId_1().equals(contact.getId())) {
-                    x.setStatus(false);
-                    conservationRepository.save(x);
-                    break;
-                }
-            }
+            List<Conservation> conservations = conservationRepository.getConservation(userId, contact_id);
+            if (conservations == null || conservations.size() == 0)
+                throw new NotFoundException("Not found conservation!");
+            conservations.get(0).setStatus(false);
+            conservationRepository.save(conservations.get(0));
             //Huy ket ban 2 ben
             unContact(user, contact);
             simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.BLOCK_CONTACT));
@@ -236,13 +230,11 @@ public class UserService implements IUserService, UserDetailsService {
                 }
             }
             if (blockToRemove != null) {
-                Conservation conservation = user.getConservations().stream()
-                        .filter(x -> x.getUserId_1().contains(contact.getId()) || x.getUserId_2().contains(contact.getId()))
-                        .findFirst().orElse(null);
-                if (conservation == null)
-                    throw new NotFoundException("Not found Conservation");
-                conservation.setStatus(true);
-                conservationRepository.save(conservation);
+                List<Conservation> conservations = conservationRepository.getConservation(userId, contactId);
+                if (conservations == null || conservations.size() == 0)
+                    throw new NotFoundException("Not found conservation!");
+                conservations.get(0).setStatus(true);
+                conservationRepository.save(conservations.get(0));
             }
             simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.REMOVE_BLOCK_CONTACT));
             return CompletableFuture.completedFuture(true);
@@ -282,7 +274,7 @@ public class UserService implements IUserService, UserDetailsService {
                 Aggregation.skip(skip),
                 Aggregation.limit(limit),
                 Aggregation.project()
-                        .and("_id").as("userId")
+                        .and("list_contact.userId").as("userId")
                         .and("list_contact.status").as("status")
         );
 
@@ -328,8 +320,14 @@ public class UserService implements IUserService, UserDetailsService {
             return CompletableFuture.completedFuture(false);
         } else {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            Conservation conservation = new Conservation(userId, contact_id, null);
-            conservation.setCode(UUID.randomUUID().toString());
+            List<Conservation> conservations = conservationRepository.getConservation(userId, contact_id);
+            Conservation conservation = null;
+            if (conservations.size() == 0) {
+                conservation = new Conservation(userId, contact_id, null);
+                conservation.setCode(UUID.randomUUID().toString());
+            } else {
+                conservation = conservations.get(0);
+            }
             Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
             mess = messageRepository.save(mess);
             conservation.setLastMessage(mess);
@@ -337,7 +335,7 @@ public class UserService implements IUserService, UserDetailsService {
             for (Contact f : user.getList_contact()) {
                 if (f.getUserId().contains(contact.getId())) {
                     f.setStatus(Contact.Status.ACCEPT);
-                    user.getConservations().add(conservation);
+                    user.getConservations().add(conservation.getId());
                     userRepository.save(user);
                     break;
                 }
@@ -345,7 +343,7 @@ public class UserService implements IUserService, UserDetailsService {
             for (Contact f : contact.getList_contact()) {
                 if (f.getUserId().contains(user.getId())) {
                     f.setStatus(Contact.Status.ACCEPT);
-                    contact.getConservations().add(conservation);
+                    contact.getConservations().add(conservation.getId());
                     userRepository.save(contact);
                     break;
                 }
@@ -376,9 +374,8 @@ public class UserService implements IUserService, UserDetailsService {
                 Aggregation.match(Criteria.where("_id").is(userId)),
                 Aggregation.unwind("list_contact"),
                 Aggregation.match(Criteria.where("list_contact.status").is(Contact.Status.WAITING)),
-                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
                 Aggregation.project()
-                        .and("_id").as("id")
+                        .and("list_contact.userId").as("userId")
                         .and("list_contact.status").as("status")
         );
         List<Contact> contacts = mongoTemplate.aggregate(aggregation, "User", Contact.class).getMappedResults();
@@ -387,6 +384,11 @@ public class UserService implements IUserService, UserDetailsService {
         }
         return CompletableFuture.completedFuture(contacts);
     }
+
+
+
+
+
 
     // Basic CRUD
     @Override

@@ -1,19 +1,25 @@
 package teleder.core.services.Conservation;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import teleder.core.exceptions.NotFoundException;
+import teleder.core.dtos.PagedResultDto;
+import teleder.core.dtos.Pagination;
 import teleder.core.models.Conservation.Conservation;
-import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
 import teleder.core.repositories.IMessageRepository;
+import teleder.core.repositories.IUserRepository;
 import teleder.core.services.Conservation.dtos.ConservationDto;
 import teleder.core.services.Conservation.dtos.CreateConservationDto;
 import teleder.core.services.Conservation.dtos.UpdateConservationDto;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+import static teleder.core.utils.PopulateDocument.populateConservation;
 
 @Service
 public class ConservationService implements IConservationService {
@@ -21,10 +27,16 @@ public class ConservationService implements IConservationService {
     IConservationRepository conservationRepository;
     final
     IMessageRepository messageRepository;
+    final IUserRepository userRepository;
+    private final MongoTemplate mongoTemplate;
+    private final ModelMapper toDto;
 
-    public ConservationService(IConservationRepository conservationRepository, IMessageRepository messageRepository) {
+    public ConservationService(IConservationRepository conservationRepository, IMessageRepository messageRepository, IUserRepository userRepository, MongoTemplate mongoTemplate, ModelMapper toDto) {
         this.conservationRepository = conservationRepository;
         this.messageRepository = messageRepository;
+        this.userRepository = userRepository;
+        this.mongoTemplate = mongoTemplate;
+        this.toDto = toDto;
     }
 
     @Override
@@ -52,5 +64,33 @@ public class ConservationService implements IConservationService {
         return null;
     }
 
+    @Override
+    @Async
+    public CompletableFuture<PagedResultDto<Conservation>> getMyConversations(String userId, long skip, int limit) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            List<String> conservationIds = user.getConservations();
+            List<Conservation> conservations = conservationRepository.findByIds(conservationIds.stream().limit(limit).skip(skip).toList());
+
+            for (Conservation conservation : conservations) {
+                populateConservation(mongoTemplate, conservation, toDto);
+            }
+            return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(conservationIds.size(), skip, limit), conservations));
+        }
+        return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(0, skip, limit), new ArrayList<>()));
+    }
+
+
+    @Override
+    @Async
+    public CompletableFuture<List<String>> getAllIdConservationGroup(String userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            List<String> conservationIds = user.getConservations();
+            List<Conservation> conservations = conservationRepository.getConservationGroup(conservationIds);
+            return CompletableFuture.completedFuture(conservations.stream().map(Conservation::getCode).toList());
+        }
+        return CompletableFuture.completedFuture(new ArrayList<>());
+    }
 
 }

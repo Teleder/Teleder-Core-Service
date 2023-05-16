@@ -19,8 +19,12 @@ import java.util.concurrent.ExecutionException;
 @RestController
 @ApiPrefixController("files")
 public class FileController {
-    @Autowired
+    final
     IFileService fileService;
+
+    public FileController(IFileService fileService) {
+        this.fileService = fileService;
+    }
 
     @Async
     @Authenticate

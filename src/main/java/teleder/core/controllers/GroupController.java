@@ -1,5 +1,6 @@
 package teleder.core.controllers;
 
+import com.google.zxing.WriterException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -11,9 +12,12 @@ import teleder.core.dtos.Pagination;
 import teleder.core.models.Group.Group;
 import teleder.core.models.Group.Member;
 import teleder.core.services.Group.IGroupService;
+import teleder.core.services.Group.dtos.CreateGroupDto;
+import teleder.core.services.Group.dtos.GroupDto;
 import teleder.core.services.Group.dtos.RoleDto;
 import teleder.core.services.User.dtos.UserBasicDto;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -28,9 +32,15 @@ public class GroupController {
         this.groupService = groupService;
     }
 
+    @Authenticate
+    @PostMapping("/create")
+    public CompletableFuture<GroupDto> create(@RequestBody CreateGroupDto input) throws IOException, ExecutionException, InterruptedException, WriterException {
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return groupService.createGroup(userId, input);
+    }
 
     @Authenticate
-    @PatchMapping("/{id}/add-member")
+    @PatchMapping("/{groupId}/add-member")
     public CompletableFuture<Group> addMemberToGroup(@PathVariable String groupId, @RequestParam String memberId) {
         return groupService.addMemberToGroup(groupId, memberId);
     }
@@ -125,4 +135,12 @@ public class GroupController {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return groupService.getNonBlockedNonMemberFriends(userId, groupId);
     }
+
+    @Authenticate
+    @GetMapping("/{groupId}")
+    public CompletableFuture<GroupDto> getDetailGroup(@PathVariable String groupId) {
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return groupService.getDetailGroup(userId, groupId);
+    }
+
 }

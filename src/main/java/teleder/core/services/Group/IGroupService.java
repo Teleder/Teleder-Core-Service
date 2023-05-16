@@ -1,5 +1,6 @@
 package teleder.core.services.Group;
 
+import com.google.zxing.WriterException;
 import teleder.core.models.Group.Group;
 import teleder.core.models.Group.Member;
 import teleder.core.models.User.User;
@@ -10,11 +11,13 @@ import teleder.core.services.Group.dtos.UpdateGroupDto;
 import teleder.core.services.IMongoService;
 import teleder.core.services.User.dtos.UserBasicDto;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public interface IGroupService extends IMongoService<GroupDto, CreateGroupDto, UpdateGroupDto> {
-    public CompletableFuture<Group> createGroup(Group input);
+    public CompletableFuture<GroupDto> createGroup(String userId,CreateGroupDto input) throws IOException, WriterException, ExecutionException, InterruptedException;
 
     public CompletableFuture<Group> addMemberToGroup(String groupId, String memberId);
 
@@ -44,4 +47,5 @@ public interface IGroupService extends IMongoService<GroupDto, CreateGroupDto, U
 
     public CompletableFuture<Long> countMyGroup();
     public CompletableFuture<List<UserBasicDto>> getNonBlockedNonMemberFriends(String userId, String groupId);
+    public CompletableFuture<GroupDto> getDetailGroup(String userId, String groupId);
 }

@@ -29,9 +29,7 @@ public class QRCodeGenerator {
         byteArrayOutputStream.flush();
         byte[] imageInBytes = byteArrayOutputStream.toByteArray();
         byteArrayOutputStream.close();
-
         return new MockMultipartFile("qr_code.png", "qr_code.png", "image/" + "png", imageInBytes);
-
     }
 
 //    public static void saveQRCodeImage(String text, int width, int height, String filePath) throws WriterException, IOException {

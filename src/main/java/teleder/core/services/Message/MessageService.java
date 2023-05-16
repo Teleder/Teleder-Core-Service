@@ -75,14 +75,13 @@ public class MessageService implements IMessageService {
         message.setCode(messagePayload.getCode());
         if (messagePayload.getParentMessageId() == null) {
             message = messageRepository.save(message);
-            Conservation conservation = user.getConservations().stream()
-                    .filter(x -> x.getUserId_1().equals(contactId) || x.getUserId_2().equals(contactId))
-                    .findFirst().orElse(null);
-            if (conservation == null) {
+            Conservation conservation = null;
+            List<Conservation> conservations = conservationRepository.getConservation(userId, contactId);
+            if (conservations == null || conservations.size() == 0) {
                 conservation = new Conservation(userId, message.getUserId_receive(), null);
                 conservation = conservationRepository.save(conservation);
-                user.getConservations().add(conservation);
-                contact.getConservations().add(conservation);
+                user.getConservations().add(conservation.getId());
+                contact.getConservations().add(conservation.getId());
                 user.setConservations(user.getConservations());
                 contact.setConservations(contact.getConservations());
                 userRepository.save(user);
@@ -90,7 +89,7 @@ public class MessageService implements IMessageService {
             }
             // add tin nhan vao db
 
-            conservation = conservationRepository.findByCode(message.getCode());
+            conservation = conservations.get(0);
             conservation.setLastMessage(message);
             conservationRepository.save(conservation);
         } else {
@@ -153,7 +152,7 @@ public class MessageService implements IMessageService {
                 mess.setContent(input.getMessageText());
                 mess = messageRepository.save(mess);
                 input.setMessage(mess);
-                if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
+                if (input.getReceiverType().equals(CONSTS.MESSAGE_GROUP))
                     simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 else
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
@@ -186,9 +185,7 @@ public class MessageService implements IMessageService {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user"));
         Group group = iGroupRepository.findById(groupId).orElse(null);
-        Conservation conservation = user.getConservations().stream()
-                .filter(x -> x.getGroupId().contains(groupId))
-                .findFirst().orElse(null);
+        Conservation conservation = conservationRepository.findByGroupId(groupId).orElseThrow(() -> new NotFoundException("Not found Conservation"));
         if (conservation == null)
             throw new NotFoundException("Not found Conservation");
         Message message = new Message(messagePayload.getCode(), messagePayload.getContent(), messagePayload.getType(), userId, groupId, null, messagePayload.getFile());
@@ -208,7 +205,9 @@ public class MessageService implements IMessageService {
     @Async
     public CompletableFuture<List<Message>> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().contains(code)))
+        Conservation conservation = conservationRepository.findByCode(code);
+        if (userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Cannot find user"))
+                .getConservations().stream().noneMatch(elem -> conservation.getCode().contains(code)))
             throw new NotFoundException("Not Found Conservation!");
         List<Message> messages = messageRepository.findMessagesWithPaginationAndSearch(skip, limit, code, content);
         messages = messages.stream()
@@ -221,20 +220,13 @@ public class MessageService implements IMessageService {
     @Async
     public CompletableFuture<PagedResultDto<Message>> findMessagesByIdUser(long skip, int limit, String content, String contactId) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        Conservation conservation = null;
-        for (Conservation tmp :
-                userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user")).getConservations()) {
-            if (tmp.getUserId_1().equals(contactId) || tmp.getUserId_2().equals(contactId)) {
-                conservation = tmp;
-                break;
-            }
-        }
-        ;
-        if (conservation == null)
+
+        List<Conservation> conservation = conservationRepository.getConservation(userId, contactId);
+        if (conservation == null || conservation.size() == 0)
             return CompletableFuture.completedFuture(PagedResultDto.create(Pagination.create(0, skip, limit), new ArrayList<Message>()));
 
         Aggregation aggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("content").regex(content, "i").and("code").in(conservation.getCode())),
+                Aggregation.match(Criteria.where("content").regex(content, "i").and("code").in(conservation.get(0).getCode())),
                 Aggregation.sort(Sort.Direction.DESC, "createAt"),
                 Aggregation.skip(skip),
                 Aggregation.limit(limit)
@@ -244,7 +236,7 @@ public class MessageService implements IMessageService {
                 .sorted(Comparator.comparing(Message::getCreateAt))
                 .collect(Collectors.toList());
         aggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("content").regex(content, "i").and("code").in(conservation.getCode())),
+                Aggregation.match(Criteria.where("content").regex(content, "i").and("code").in(conservation.get(0).getCode())),
                 Aggregation.sort(Sort.Direction.DESC, "createAt")
         );
         long total = mongoTemplate.aggregate(aggregation, "Message", Message.class).getMappedResults().size();

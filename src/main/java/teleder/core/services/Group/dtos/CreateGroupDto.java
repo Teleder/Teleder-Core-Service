@@ -4,15 +4,13 @@ import lombok.Data;
 import teleder.core.models.File.File;
 import teleder.core.models.Group.Member;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Data
 public class CreateGroupDto {
     List<Member> member = new ArrayList<>();
     boolean isPublic;
-    private String code = UUID.randomUUID().toString();
-    private String user_own_id;
-    private File avatarGroup;
+    private String avatarGroup;
+    private String bio;
+    private String name;
 }

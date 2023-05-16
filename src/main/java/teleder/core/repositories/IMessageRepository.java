@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface IMessageRepository extends MongoRepository<Message, String> {
     @Aggregation(pipeline = {
-            "{  $match: { isDeleted: false, idParent: null,$or: [ { code: ?2 }, { content: { $regex: ?3, $options: 'i' } } ] } }",
+            "{  $match: { isDeleted: false, idParent: null,  code: ?2 ,  content: { $regex: ?3, $options: 'i'  }  } }",
             "{ $sort: { createAt: -1 } }",
             "{ $skip: ?0 }",
             "{ $limit: ?1 }"

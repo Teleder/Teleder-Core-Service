@@ -7,8 +7,11 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import teleder.core.models.BaseModel;
 import teleder.core.models.Group.Group;
+import teleder.core.models.Group.PinMessage;
 import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
+import teleder.core.services.Group.dtos.GroupDto;
+import teleder.core.services.User.dtos.UserBasicDto;
 import teleder.core.utils.CONSTS;
 
 import java.util.ArrayList;
@@ -29,13 +32,13 @@ public class Conservation extends BaseModel {
     private String userId_1;
     private String currentEmotion = "\uD83D\uDC4D";
     @Transient
-    private User user_1;
+    private UserBasicDto user_1;
     private String userId_2;
     @Transient
-    private User user_2;
+    private UserBasicDto user_2;
     private String groupId;
     @Transient
-    private Group group;
+    private GroupDto group;
 
     public Conservation(String userId_1, String userId_2, String groupId) {
         this.userId_2 = userId_2;
@@ -44,21 +47,15 @@ public class Conservation extends BaseModel {
     }
 
 
-    public Conservation(String groupId, String code) {
+    public Conservation(String groupId) {
         this.groupId = groupId;
-        this.code = code;
+        this.code = String.valueOf(UUID.randomUUID());
         this.type = CONSTS.MESSAGE_GROUP;
     }
 
     public Conservation() {
     }
 
-    @Data
-    public class PinMessage {
-        @DBRef
-        User pinBy;
-        @DBRef
-        private List<Message> pinMessage = new ArrayList<>();
-    }
+
 }
 

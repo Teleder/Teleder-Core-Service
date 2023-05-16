@@ -11,8 +11,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import teleder.core.exceptions.NotFoundException;
+import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.File.File;
 import teleder.core.models.File.FileCategory;
+import teleder.core.repositories.IConservationRepository;
 import teleder.core.repositories.IFileRepository;
 import teleder.core.repositories.IUserRepository;
 import teleder.core.services.File.dtos.CreateFileDto;
@@ -41,11 +43,14 @@ public class FileService implements IFileService {
     IUserRepository userRepository;
     final
     IFileRepository fileRepository;
+    final
+    IConservationRepository conservationRepository;
     private final Cloudinary cloudinary;
 
-    public FileService(IUserRepository userRepository, IFileRepository fileRepository, Cloudinary cloudinary) {
+    public FileService(IUserRepository userRepository, IFileRepository fileRepository, IConservationRepository conservationRepository, Cloudinary cloudinary) {
         this.userRepository = userRepository;
         this.fileRepository = fileRepository;
+        this.conservationRepository = conservationRepository;
         this.cloudinary = cloudinary;
     }
 
@@ -192,8 +197,14 @@ public class FileService implements IFileService {
     @Async
     public CompletableFuture<List<File>> findFileWithPaginationAndSearch(long skip, int limit, String code) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        if (!userRepository.findById(userId).get().getConservations().stream().anyMatch(elem -> elem.getCode().equals(code)))
+        Conservation conservation = conservationRepository.findByCode(code);
+        if (conservation == null)
             throw new NotFoundException("Not Found Conservation!");
+        else{
+            if (userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Cannot find user")).getConservations()
+                    .stream().noneMatch(elem -> conservation.getCode().equals(code)))
+                throw new NotFoundException("Not Found Conservation!");
+        }
         List<File> files = fileRepository.findFileWithPaginationAndSearch(skip, limit, code);
         return CompletableFuture.completedFuture(files);
     }
