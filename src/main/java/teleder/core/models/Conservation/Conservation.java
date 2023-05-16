@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @Document(collection = "Conservation")
 @Data
-public class Conservation extends BaseModel {
+public class Conservation extends BaseModel implements Comparable<Conservation> {
     boolean status = true;
     @Id
     private String id;
@@ -56,6 +56,9 @@ public class Conservation extends BaseModel {
     public Conservation() {
     }
 
-
+    @Override
+    public int compareTo(Conservation o) {
+        return this.getCreateAt().compareTo(o.getUpdateAt());
+    }
 }
 

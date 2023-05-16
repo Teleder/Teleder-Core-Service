@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.dtos.Pagination;
 import teleder.core.models.Conservation.Conservation;
+import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
 import teleder.core.repositories.IMessageRepository;
@@ -16,8 +17,10 @@ import teleder.core.services.Conservation.dtos.CreateConservationDto;
 import teleder.core.services.Conservation.dtos.UpdateConservationDto;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static teleder.core.utils.PopulateDocument.populateConservation;
 
@@ -71,10 +74,13 @@ public class ConservationService implements IConservationService {
         if (user != null) {
             List<String> conservationIds = user.getConservations();
             List<Conservation> conservations = conservationRepository.findByIds(conservationIds.stream().limit(limit).skip(skip).toList());
-
+            conservations = conservations.stream()
+                    .sorted(Comparator.comparing(Conservation::getCreateAt))
+                    .collect(Collectors.toList());
             for (Conservation conservation : conservations) {
                 populateConservation(mongoTemplate, conservation, toDto);
             }
+
             return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(conservationIds.size(), skip, limit), conservations));
         }
         return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(0, skip, limit), new ArrayList<>()));
@@ -88,7 +94,8 @@ public class ConservationService implements IConservationService {
         if (user != null) {
             List<String> conservationIds = user.getConservations();
             List<Conservation> conservations = conservationRepository.getConservationGroup(conservationIds);
-            return CompletableFuture.completedFuture(conservations.stream().map(Conservation::getCode).toList());
+
+            return CompletableFuture.completedFuture(conservations.stream().map(Conservation::getGroupId).toList());
         }
         return CompletableFuture.completedFuture(new ArrayList<>());
     }

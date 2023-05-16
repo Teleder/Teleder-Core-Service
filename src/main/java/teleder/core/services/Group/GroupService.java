@@ -629,7 +629,7 @@ public class GroupService implements IGroupService {
         Member memberFilter = group.getMembers().stream()
                 .filter(x -> x.getUserId().contains(userId))
                 .findFirst().orElse(null);
-        if (memberFilter != null) {
+        if (memberFilter == null) {
             throw new BadRequestException("You are not a member of this group");
 
         }

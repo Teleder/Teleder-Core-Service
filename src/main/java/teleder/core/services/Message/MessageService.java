@@ -90,6 +90,7 @@ public class MessageService implements IMessageService {
             // add tin nhan vao db
 
             conservation = conservations.get(0);
+            conservation.setUpdateAt(new Date());
             conservation.setLastMessage(message);
             conservationRepository.save(conservation);
         } else {
@@ -188,15 +189,16 @@ public class MessageService implements IMessageService {
         Conservation conservation = conservationRepository.findByGroupId(groupId).orElseThrow(() -> new NotFoundException("Not found Conservation"));
         if (conservation == null)
             throw new NotFoundException("Not found Conservation");
-        Message message = new Message(messagePayload.getCode(), messagePayload.getContent(), messagePayload.getType(), userId, groupId, null, messagePayload.getFile());
+        Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getType(), userId, groupId, null, messagePayload.getFile());
         message.setUserId_send(userId);
         message.setCode(conservation.getCode());
         message.setGroupId(conservation.getGroupId());
         message.setTYPE(CONSTS.MESSAGE_GROUP);
         conservation = conservationRepository.findByCode(message.getCode());
-        conservation.setLastMessage(message);
-        conservationRepository.save(conservation);
         message = messageRepository.save(message);
+        conservation.setLastMessage(message);
+        conservation.setUpdateAt(new Date());
+        conservationRepository.save(conservation);
         simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(message, CONSTS.MESSAGE_GROUP));
         return CompletableFuture.completedFuture(message);
     }
