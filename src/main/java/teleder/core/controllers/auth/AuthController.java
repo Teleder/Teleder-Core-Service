@@ -98,8 +98,6 @@ public class AuthController {
         }
         throw new Exception("Invalid refresh token");
     }
-
-
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPasswordByToken(@RequestBody PayLoadResetPasswordByPhone input) {
         User user = userRepository.findByTokenResetPassword(input.getToken()).orElseThrow(() -> new NotFoundException("User not found"));
@@ -116,11 +114,9 @@ public class AuthController {
         userRepository.save(user);
         return ResponseEntity.ok(true);
     }
-
-
     @PostMapping("/request-pin/{phone}")
     public void requestPin(@PathVariable("phone") String phoneNumber) {
-        User user = userRepository.findByPhoneNumber(phoneNumber).orElseThrow(() -> new NotFoundException("User not found"));
+        User user = userRepository.findByPhoneNumber(phoneNumber).orElseThrow(() -> new NotFoundException("Phone not found"));
         TokenResetPasswordDto token = new TokenResetPasswordDto();
         token.setToken(generateRandomDigits());
         token.setEmail(user.getEmail());
@@ -131,7 +127,6 @@ public class AuthController {
         String messageText = "Mã xác thực của bạn là: " + token.getToken();
         smsService.sendSMS(phoneNumber.replaceFirst("^0", "+84"), messageText);
     }
-
     @PostMapping("/validate-pin/{phone}")
     public ResponseEntity<?> validatePin(@PathVariable String phone, @RequestBody TokenDto input) throws UnsupportedEncodingException {
         User user = userRepository.findByPhoneNumber(phone).orElseThrow(() -> new NotFoundException("User not found"));
@@ -148,7 +143,6 @@ public class AuthController {
 
         return ResponseEntity.ok(URLEncoder.encode(user.getTokenResetPassword(), "UTF-8"));
     }
-
     private String generateRandomDigits() {
         Random random = new Random();
         StringBuilder sb = new StringBuilder(6);
@@ -157,7 +151,6 @@ public class AuthController {
         }
         return sb.toString();
     }
-
 
     private String encodeToken(TokenResetPasswordDto tokenResetPassword) {
         try {

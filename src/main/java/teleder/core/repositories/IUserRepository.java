@@ -17,8 +17,8 @@ public interface IUserRepository extends MongoRepository<User, String> {
     @Query("{'tokenResetPassword' : ?0}")
     Optional<User> findByTokenResetPassword(String token);
 
-    @Query("{'tokenResetPassword' : ?0}")
-    Optional<User>   findByPhoneNumber(String phone);
+    @Query("{'phone' : ?0}")
+    Optional<User> findByPhoneNumber(String phone);
 //    @Query("{'id': ?0}")
 //    Optional<User> findById(String id);
 }
