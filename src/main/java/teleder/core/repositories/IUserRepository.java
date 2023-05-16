@@ -1,6 +1,5 @@
 package teleder.core.repositories;
 
-import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import teleder.core.models.User.User;
@@ -15,6 +14,11 @@ public interface IUserRepository extends MongoRepository<User, String> {
     @Query("{ $or: [ { 'email': ?0 }, { 'phone': ?0 }, { 'bio': ?0 } ] }")
     List<User> findContact(String input);
 
+    @Query("{'tokenResetPassword' : ?0}")
+    Optional<User> findByTokenResetPassword(String token);
+
+    @Query("{'tokenResetPassword' : ?0}")
+    Optional<User>   findByPhoneNumber(String phone);
 //    @Query("{'id': ?0}")
 //    Optional<User> findById(String id);
 }

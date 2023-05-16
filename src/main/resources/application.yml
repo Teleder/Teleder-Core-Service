@@ -1,3 +1,7 @@
+twilio:
+    phone_number: "+19786794059"
+    account_sid: ACfd7cf128f3ecf64f47d5adf05351f59f
+    auth_token: 544e039adf512dac73ccdc154979cdcb
 spring:
     profiles:
         active: default

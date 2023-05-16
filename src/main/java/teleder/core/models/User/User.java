@@ -33,6 +33,9 @@ public class User extends BaseModel implements UserDetails {
     private File qr;
     private List<Block> blocks = new ArrayList<>();
     private String password;
+    private String tokenResetPassword;
+    private int requestCount = 0;
+    private Date lastRequest;
 //    @DBRef
 //    private List<Conservation> conservations = new ArrayList<>();
     private List<String> conservations;
