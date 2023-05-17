@@ -76,8 +76,8 @@ public class GroupController {
     }
 
     @Authenticate
-    @PatchMapping("/{groupId}/response-member-join")
-    public CompletableFuture<Void> responseMemberJoin(@PathVariable String groupId, @RequestParam String memberId, Boolean accept) {
+    @PatchMapping("/response-member-join/{groupId}")
+    public CompletableFuture<Void> responseMemberJoin(@PathVariable String groupId, @RequestParam String memberId, @RequestParam("accept") Boolean accept) {
         return groupService.responseMemberJoin(groupId, memberId, accept);
     }
 
@@ -143,4 +143,9 @@ public class GroupController {
         return groupService.getDetailGroup(userId, groupId);
     }
 
+    @Authenticate
+    @GetMapping("/get-waiting-accept/{groupId}")
+    public CompletableFuture<List<UserBasicDto>> getWaitingAccept(@PathVariable String groupId) {
+        return groupService.getWaitingAccept(groupId);
+    }
 }

@@ -6,10 +6,8 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import teleder.core.models.BaseModel;
-import teleder.core.models.Group.Group;
 import teleder.core.models.Group.PinMessage;
 import teleder.core.models.Message.Message;
-import teleder.core.models.User.User;
 import teleder.core.services.Group.dtos.GroupDto;
 import teleder.core.services.User.dtos.UserBasicDto;
 import teleder.core.utils.CONSTS;
@@ -58,7 +56,7 @@ public class Conservation extends BaseModel implements Comparable<Conservation> 
 
     @Override
     public int compareTo(Conservation o) {
-        return this.getCreateAt().compareTo(o.getUpdateAt());
+        return o.getUpdateAt().compareTo(this.getCreateAt());
     }
 }
 

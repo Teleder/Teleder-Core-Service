@@ -159,7 +159,7 @@ public class GroupService implements IGroupService {
                     .findFirst().orElse(null);
             if (blockFilter != null)
                 throw new BadRequestException("User has been block with reason: " + blockFilter.getReason() + " ,Please unlock if you are admin or member has permission to unlock before add new member");
-            if (group.isPublic() || user.getId().contains(group.getUser_own().getId())) {
+            if (group.isPublic() || userId.equals(group.getUser_own().getId())) {
                 group.getMembers().add(new Member(memberId, userId, Member.Status.ACCEPT));
                 member.getConservations().add(conservationRepository.findByGroupId(group.getId()).orElseThrow(() -> new NotFoundException("Not found conservation")).getId());
                 // add conservation to user
@@ -385,7 +385,7 @@ public class GroupService implements IGroupService {
 
     @Override
     @Async
-    public CompletableFuture<Void> responseMemberJoin(String groupId, String memberId, Boolean accept) {
+        public CompletableFuture<Void> responseMemberJoin(String groupId, String memberId, Boolean accept) {
         if (accept) {
             Group group = groupRepository.findById(groupId).orElse(null);
             if (group == null) {
@@ -634,6 +634,20 @@ public class GroupService implements IGroupService {
 
         }
         return CompletableFuture.completedFuture(toDto.map(group, GroupDto.class));
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<List<UserBasicDto>> getWaitingAccept(String groupId) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new NotFoundException("Group not found"));
+        List<UserBasicDto> result = new ArrayList<>();
+        for (Member member : group.getMembers()) {
+            if (member.getStatus().equals(WAITING)) {
+                result.add(toDto.map(
+                        userRepository.findById(member.getUserId()).orElseThrow(() -> new NotFoundException("Not found user")), UserBasicDto.class));
+            }
+        }
+        return CompletableFuture.completedFuture(result);
     }
 
     // Basic CRUD

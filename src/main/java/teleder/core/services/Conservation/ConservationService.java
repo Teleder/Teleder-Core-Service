@@ -74,9 +74,9 @@ public class ConservationService implements IConservationService {
         if (user != null) {
             List<String> conservationIds = user.getConservations();
             List<Conservation> conservations = conservationRepository.findByIds(conservationIds.stream().limit(limit).skip(skip).toList());
-            conservations = conservations.stream()
-                    .sorted(Comparator.comparing(Conservation::getCreateAt))
-                    .collect(Collectors.toList());
+//            conservations = conservations.stream()
+//                    .sorted(Comparator.comparing(Conservation::getCreateAt))
+//                    .collect(Collectors.toList());
             for (Conservation conservation : conservations) {
                 populateConservation(mongoTemplate, conservation, toDto);
             }

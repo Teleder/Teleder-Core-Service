@@ -30,6 +30,7 @@ import teleder.core.services.User.dtos.UserProfileDto;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -100,7 +101,7 @@ public class AuthController {
     }
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPasswordByToken(@RequestBody PayLoadResetPasswordByPhone input) {
-        User user = userRepository.findByTokenResetPassword(input.getToken()).orElseThrow(() -> new NotFoundException("User not found"));
+        User user = userRepository.findByTokenResetPassword(URLDecoder.decode(input.getToken())).orElseThrow(() -> new NotFoundException("User not found"));
         TokenResetPasswordDto tokenResetPassword = decodeToken(user.getTokenResetPassword());
         if (tokenResetPassword == null || tokenResetPassword.isExpired()) {
             return ResponseEntity.badRequest().body("Token is expired");

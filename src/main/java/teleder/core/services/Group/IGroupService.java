@@ -48,4 +48,5 @@ public interface IGroupService extends IMongoService<GroupDto, CreateGroupDto, U
     public CompletableFuture<Long> countMyGroup();
     public CompletableFuture<List<UserBasicDto>> getNonBlockedNonMemberFriends(String userId, String groupId);
     public CompletableFuture<GroupDto> getDetailGroup(String userId, String groupId);
+    public CompletableFuture<List<UserBasicDto>> getWaitingAccept(String groupId);
 }
