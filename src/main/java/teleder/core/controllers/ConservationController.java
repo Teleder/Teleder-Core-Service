@@ -1,9 +1,7 @@
 package teleder.core.controllers;
 
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.annotations.ApiPrefixController;
@@ -38,6 +36,13 @@ public class ConservationController {
     public CompletableFuture<List<String>> getAllIdConservationGroup(){
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return conservationService.getAllIdConservationGroup(userId);
+    }
+
+    @Authenticate
+    @DeleteMapping("/delete/{code}")
+    public CompletableFuture<Boolean> deleteConservation(@PathVariable String code){
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return conservationService.deleteConservation(userId, code);
     }
 
 }

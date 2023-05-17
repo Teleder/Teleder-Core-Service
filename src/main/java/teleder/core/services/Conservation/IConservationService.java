@@ -15,4 +15,5 @@ public interface IConservationService extends IMongoService<ConservationDto, Cre
 
     public CompletableFuture<PagedResultDto<Conservation>> getMyConversations(String userId, long skip, int limit);
     public CompletableFuture<List<String>> getAllIdConservationGroup(String userId);
+    public CompletableFuture<Boolean> deleteConservation(String userId, String code);
 }

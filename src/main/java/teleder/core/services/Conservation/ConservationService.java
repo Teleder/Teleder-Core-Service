@@ -6,8 +6,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.dtos.Pagination;
+import teleder.core.exceptions.BadRequestException;
 import teleder.core.models.Conservation.Conservation;
-import teleder.core.models.Message.Message;
 import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
 import teleder.core.repositories.IMessageRepository;
@@ -100,4 +100,23 @@ public class ConservationService implements IConservationService {
         return CompletableFuture.completedFuture(new ArrayList<>());
     }
 
+    @Override
+    @Async
+    public CompletableFuture<Boolean> deleteConservation(String userId, String code) {
+        Conservation conservation = conservationRepository.findByCode(code);
+        if (conservation.getGroupId() != null) {
+            throw new BadRequestException("Conservation is group");
+        }
+        userRepository.findById(userId).orElseThrow(() -> new BadRequestException("User not found"));
+        userRepository.findById(conservation.getUserId_1()).ifPresent(user -> {
+            user.getConservations().remove(conservation.getCode());
+            userRepository.save(user);
+        });
+        userRepository.findById(conservation.getUserId_2()).ifPresent(user -> {
+            user.getConservations().remove(conservation.getCode());
+            userRepository.save(user);
+        });
+        conservationRepository.delete(conservation);
+        return CompletableFuture.completedFuture(true);
+    }
 }

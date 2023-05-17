@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import teleder.core.dtos.*;
+import teleder.core.exceptions.BadRequestException;
 import teleder.core.exceptions.NotFoundException;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.models.Group.Group;
@@ -67,6 +68,9 @@ public class MessageService implements IMessageService {
         // check conservation da tao hay chua neu chua tao thi tao moi
         User user = userRepository.findById(userId).orElse(null);
         User contact = userRepository.findById(contactId).orElse(null);
+        Conservation check = conservationRepository.findByCode(messagePayload.getCode());
+        if (!check.isStatus())
+            throw new BadRequestException("You cannot send message to this conservation");
         Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getType(), userId, contactId, null, messagePayload.getFile());
         if (user == null || contact == null)
             throw new NotFoundException("Not found user");
@@ -187,8 +191,8 @@ public class MessageService implements IMessageService {
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user"));
         Group group = iGroupRepository.findById(groupId).orElse(null);
         Conservation conservation = conservationRepository.findByGroupId(groupId).orElseThrow(() -> new NotFoundException("Not found Conservation"));
-        if (conservation == null)
-            throw new NotFoundException("Not found Conservation");
+        if (!conservation.isStatus())
+            throw new BadRequestException("You cannot send message to this conservation");
         Message message = new Message(messagePayload.getContent(), messagePayload.getCode(), messagePayload.getType(), userId, groupId, null, messagePayload.getFile());
         message.setUserId_send(userId);
         message.setCode(conservation.getCode());

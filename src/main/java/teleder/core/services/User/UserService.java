@@ -170,6 +170,7 @@ public class UserService implements IUserService, UserDetailsService {
             User contact = contactOptional.get();
             // them vao danh sach chan
             user.getBlocks().add(new Block(contact_id, reason));
+            userRepository.save(user);
             List<Conservation> conservations = conservationRepository.getConservation(userId, contact_id);
             if (conservations == null || conservations.size() == 0)
                 throw new NotFoundException("Not found conservation!");
@@ -229,7 +230,7 @@ public class UserService implements IUserService, UserDetailsService {
                     break;
                 }
             }
-            if (blockToRemove != null) {
+            if (blockToRemove == null) {
                 List<Conservation> conservations = conservationRepository.getConservation(userId, contactId);
                 if (conservations == null || conservations.size() == 0)
                     throw new NotFoundException("Not found conservation!");
