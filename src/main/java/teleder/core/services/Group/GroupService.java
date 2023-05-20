@@ -68,7 +68,15 @@ public class GroupService implements IGroupService {
     private final ModelMapper toDto;
     final MongoTemplate mongoTemplate;
 
-    public GroupService(SimpMessagingTemplate simpMessagingTemplate, IGroupRepository groupRepository, IUserRepository userRepository, IConservationRepository conservationRepository, IPermissionRepository permissionRepository, IMessageRepository messageRepository, FileService fileService, ModelMapper toDto, MongoTemplate mongoTemplate) {
+    public GroupService(SimpMessagingTemplate simpMessagingTemplate,
+                        IGroupRepository groupRepository,
+                        IUserRepository userRepository,
+                        IConservationRepository conservationRepository,
+                        IPermissionRepository permissionRepository,
+                        IMessageRepository messageRepository,
+                        FileService fileService,
+                        ModelMapper toDto,
+                        MongoTemplate mongoTemplate) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
@@ -116,7 +124,7 @@ public class GroupService implements IGroupService {
         }
         for (Member mem : input.getMember()) {
             User member = userRepository.findById(mem.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user"));
-            member.getConservations().add(conservation.getId());
+            member.getConservations().add(conservation.getCode());
             users.add(member);
         }
         messages = messageRepository.saveAll(messages);
@@ -678,7 +686,16 @@ public class GroupService implements IGroupService {
         return null;
     }
 
-
+    @Override
+    @Async
+    public CompletableFuture<Void> delete(String userID, String id) {
+        Group group =   groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group not found"));
+        if (!group.getUser_own().getId().contains(userID)) {
+            throw new UnauthorizedException("You do not have permission to do that");
+        }
+        groupRepository.delete(group);
+        return null;
+    }
     @Override
     @Async
     public CompletableFuture<Void> delete(String id) {

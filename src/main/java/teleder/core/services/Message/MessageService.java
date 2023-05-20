@@ -88,11 +88,12 @@ public class MessageService implements IMessageService {
                 contact.getConservations().add(conservation.getId());
                 user.setConservations(user.getConservations());
                 contact.setConservations(contact.getConservations());
+                message.setCode(conservation.getCode());
+                messageRepository.save(message);
                 userRepository.save(user);
                 userRepository.save(contact);
             }
             // add tin nhan vao db
-
             conservation = conservations.get(0);
             conservation.setUpdateAt(new Date());
             conservation.setLastMessage(message);

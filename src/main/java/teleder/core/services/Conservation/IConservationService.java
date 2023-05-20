@@ -3,9 +3,7 @@ package teleder.core.services.Conservation;
 import org.springframework.scheduling.annotation.Async;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.models.Conservation.Conservation;
-import teleder.core.services.Conservation.dtos.ConservationDto;
-import teleder.core.services.Conservation.dtos.CreateConservationDto;
-import teleder.core.services.Conservation.dtos.UpdateConservationDto;
+import teleder.core.services.Conservation.dtos.*;
 import teleder.core.services.IMongoService;
 
 import java.util.List;
@@ -16,4 +14,6 @@ public interface IConservationService extends IMongoService<ConservationDto, Cre
     public CompletableFuture<PagedResultDto<Conservation>> getMyConversations(String userId, long skip, int limit);
     public CompletableFuture<List<String>> getAllIdConservationGroup(String userId);
     public CompletableFuture<Boolean> deleteConservation(String userId, String code);
+    public CompletableFuture<ConservationDto> createPrivateConservation(ConservationPrivateDto input);
+    public CompletableFuture<ConservationDto> createGroupConservation(ConservationGroupDto input);
 }

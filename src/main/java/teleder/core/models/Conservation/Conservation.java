@@ -47,7 +47,6 @@ public class Conservation extends BaseModel implements Comparable<Conservation> 
 
     public Conservation(String groupId) {
         this.groupId = groupId;
-        this.code = String.valueOf(UUID.randomUUID());
         this.type = CONSTS.MESSAGE_GROUP;
     }
 

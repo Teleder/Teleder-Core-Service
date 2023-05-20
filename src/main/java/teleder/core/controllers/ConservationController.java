@@ -1,5 +1,6 @@
 package teleder.core.controllers;
 
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -9,6 +10,10 @@ import teleder.core.annotations.Authenticate;
 import teleder.core.dtos.PagedResultDto;
 import teleder.core.models.Conservation.Conservation;
 import teleder.core.services.Conservation.IConservationService;
+import teleder.core.services.Conservation.dtos.ConservationDto;
+import teleder.core.services.Conservation.dtos.ConservationGroupDto;
+import teleder.core.services.Conservation.dtos.ConservationPrivateDto;
+import teleder.core.services.Group.dtos.GroupDto;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -45,4 +50,19 @@ public class ConservationController {
         return conservationService.deleteConservation(userId, code);
     }
 
+
+    @Authenticate
+    @PostMapping("/create-private")
+    public CompletableFuture<ConservationDto> createPrivateConservation(@RequestBody ConservationPrivateDto input){
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return conservationService.createPrivateConservation(input);
+    }
+
+
+    @Authenticate
+    @PostMapping("/create-group")
+    public CompletableFuture<ConservationDto> createGroupConservation(@RequestBody ConservationGroupDto input){
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return conservationService.createGroupConservation(input);
+    }
 }

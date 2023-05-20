@@ -12,15 +12,12 @@ import teleder.core.models.User.User;
 import teleder.core.repositories.IConservationRepository;
 import teleder.core.repositories.IMessageRepository;
 import teleder.core.repositories.IUserRepository;
-import teleder.core.services.Conservation.dtos.ConservationDto;
-import teleder.core.services.Conservation.dtos.CreateConservationDto;
-import teleder.core.services.Conservation.dtos.UpdateConservationDto;
+import teleder.core.services.Conservation.dtos.*;
+import teleder.core.utils.CONSTS;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static teleder.core.utils.PopulateDocument.populateConservation;
 
@@ -118,5 +115,25 @@ public class ConservationService implements IConservationService {
         });
         conservationRepository.delete(conservation);
         return CompletableFuture.completedFuture(true);
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<ConservationDto> createPrivateConservation(ConservationPrivateDto input) {
+        Conservation conservation = new Conservation();
+        conservation.setUserId_1(input.getUserId_1());
+        conservation.setUserId_2(input.getUserId_2());
+        conservation.setGroupId(null);
+        conservation.setType(CONSTS.MESSAGE_PRIVATE);
+        return CompletableFuture.completedFuture(toDto.map(conservationRepository.save(conservation), ConservationDto.class));
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<ConservationDto> createGroupConservation(ConservationGroupDto input) {
+        Conservation conservation = new Conservation();
+        conservation.setGroupId(input.getGroupId());
+        conservation.setType(CONSTS.MESSAGE_GROUP);
+        return CompletableFuture.completedFuture(toDto.map(conservationRepository.save(conservation), ConservationDto.class));
     }
 }

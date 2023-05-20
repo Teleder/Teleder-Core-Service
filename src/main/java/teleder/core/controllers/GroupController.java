@@ -96,6 +96,7 @@ public class GroupController {
         throw new RuntimeException("Some thing went wrong!");
     }
 
+
     @Authenticate
     @GetMapping("/{groupId}/groups-paginate")
     public PagedResultDto<Group> getMyGroupsPaginate(@PathVariable String groupId, @RequestParam String search, @RequestParam long page, @RequestParam int size) {
@@ -115,6 +116,13 @@ public class GroupController {
     @PatchMapping("/{groupId}/leave-group")
     public CompletableFuture<Void> leaveGroup(@PathVariable String groupId) {
         return groupService.leaveGroup(groupId);
+    }
+
+    @Authenticate
+    @DeleteMapping("/delete/{groupId}")
+    public CompletableFuture<Void> deleteGroup(@PathVariable String groupId) {
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return groupService.delete(userId, groupId);
     }
 
     @Authenticate
