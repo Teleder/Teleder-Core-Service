@@ -2,7 +2,6 @@ package teleder.core.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
@@ -24,14 +23,14 @@ public class IndexConfiguration implements CommandLineRunner{
         if (skipCommandLineRunners) {
             return;
         }
-        createUniqueIndexIfNotExists(mongoTemplate, "User", "bio");
-        createUniqueIndexIfNotExists(mongoTemplate, "User", "phone");
-        createUniqueIndexIfNotExists(mongoTemplate, "User", "email");
+        createUniqueIndexIfNotExists(mongoTemplate, "bio");
+        createUniqueIndexIfNotExists(mongoTemplate, "phone");
+        createUniqueIndexIfNotExists(mongoTemplate, "email");
     }
 
 
-    private void createUniqueIndexIfNotExists(MongoTemplate mongoTemplate, String collectionName, String fieldName) {
-        IndexOperations indexOperations = mongoTemplate.indexOps(collectionName);
+    private void createUniqueIndexIfNotExists(MongoTemplate mongoTemplate, String fieldName) {
+        IndexOperations indexOperations = mongoTemplate.indexOps("User");
         IndexDefinition indexDefinition = new Index().on(fieldName, Sort.Direction.ASC).unique();
         indexOperations.ensureIndex(indexDefinition);
     }

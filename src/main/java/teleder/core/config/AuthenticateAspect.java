@@ -20,10 +20,13 @@ import java.security.spec.InvalidKeySpecException;
 @Component
 @Order(1)
 public class AuthenticateAspect {
-    @Autowired
-    private JwtTokenUtil jwtTokenUtil;
-    @Autowired
-    private UserService userDetailsService;
+    private final JwtTokenUtil jwtTokenUtil;
+    private final UserService userDetailsService;
+
+    public AuthenticateAspect(JwtTokenUtil jwtTokenUtil, UserService userDetailsService) {
+        this.jwtTokenUtil = jwtTokenUtil;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Before("@annotation(teleder.core.annotations.Authenticate)")
     public void authenticate(JoinPoint joinPoint) throws UnauthorizedException, NoSuchAlgorithmException, InvalidKeySpecException {

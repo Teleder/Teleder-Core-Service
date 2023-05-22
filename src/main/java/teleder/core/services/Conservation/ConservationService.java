@@ -1,6 +1,7 @@
 package teleder.core.services.Conservation;
 
 import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -102,7 +103,7 @@ public class ConservationService implements IConservationService {
     public CompletableFuture<Boolean> deleteConservation(String userId, String code) {
         Conservation conservation = conservationRepository.findByCode(code);
         if (conservation.getGroupId() != null) {
-            throw new BadRequestException("Conservation is group");
+            throw new BadRequestException("Conservation is not group");
         }
         userRepository.findById(userId).orElseThrow(() -> new BadRequestException("User not found"));
         userRepository.findById(conservation.getUserId_1()).ifPresent(user -> {
@@ -119,21 +120,23 @@ public class ConservationService implements IConservationService {
 
     @Override
     @Async
-    public CompletableFuture<ConservationDto> createPrivateConservation(ConservationPrivateDto input) {
+    public CompletableFuture<Conservation> createPrivateConservation(String userId,ConservationPrivateDto input) {
         Conservation conservation = new Conservation();
-        conservation.setUserId_1(input.getUserId_1());
-        conservation.setUserId_2(input.getUserId_2());
+        conservation.setUserId_1(userId);
+        conservation.setUserId_2(input.getUser());
         conservation.setGroupId(null);
         conservation.setType(CONSTS.MESSAGE_PRIVATE);
-        return CompletableFuture.completedFuture(toDto.map(conservationRepository.save(conservation), ConservationDto.class));
+        toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        return CompletableFuture.completedFuture(toDto.map(conservationRepository.save(conservation), Conservation.class));
     }
 
     @Override
     @Async
-    public CompletableFuture<ConservationDto> createGroupConservation(ConservationGroupDto input) {
+    public CompletableFuture<Conservation> createGroupConservation(ConservationGroupDto input) {
         Conservation conservation = new Conservation();
         conservation.setGroupId(input.getGroupId());
-        conservation.setType(CONSTS.MESSAGE_GROUP);
-        return CompletableFuture.completedFuture(toDto.map(conservationRepository.save(conservation), ConservationDto.class));
+        conservation.setType(CONSTS.MESSAGE_GROUP);        toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+
+        return CompletableFuture.completedFuture(toDto.map(conservationRepository.save(conservation), Conservation.class));
     }
 }

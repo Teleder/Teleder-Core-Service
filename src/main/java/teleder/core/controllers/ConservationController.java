@@ -53,15 +53,15 @@ public class ConservationController {
 
     @Authenticate
     @PostMapping("/create-private")
-    public CompletableFuture<ConservationDto> createPrivateConservation(@RequestBody ConservationPrivateDto input){
+    public CompletableFuture<Conservation> createPrivateConservation(@RequestBody ConservationPrivateDto input){
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
-        return conservationService.createPrivateConservation(input);
+        return conservationService.createPrivateConservation(userId, input);
     }
 
 
     @Authenticate
     @PostMapping("/create-group")
-    public CompletableFuture<ConservationDto> createGroupConservation(@RequestBody ConservationGroupDto input){
+    public CompletableFuture<Conservation> createGroupConservation(@RequestBody ConservationGroupDto input){
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return conservationService.createGroupConservation(input);
     }

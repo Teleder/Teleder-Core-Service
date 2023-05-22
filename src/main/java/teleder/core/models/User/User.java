@@ -38,7 +38,7 @@ public class User extends BaseModel implements UserDetails {
     private Date lastRequest;
 //    @DBRef
 //    private List<Conservation> conservations = new ArrayList<>();
-    private List<String> conservations;
+    private List<String> conservations = new ArrayList<>();
     private Role role = Role.USER;
     private List<Contact> list_contact = new ArrayList<>();
    public boolean isActive = false;

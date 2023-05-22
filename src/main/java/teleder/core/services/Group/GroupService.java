@@ -124,17 +124,20 @@ public class GroupService implements IGroupService {
         }
         for (Member mem : input.getMember()) {
             User member = userRepository.findById(mem.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user"));
-            member.getConservations().add(conservation.getCode());
+            member.getConservations().add(conservation.getId());
             users.add(member);
         }
         messages = messageRepository.saveAll(messages);
         conservation.setLastMessage(messages.get(messages.size() - 1));
-        conservationRepository.save(conservation);
+        conservation =  conservationRepository.save(conservation);
+        gr.setCode(conservation.getCode());
+        groupRepository.save(gr);
         user.getConservations().add(conservation.getId());
         users.add(user);
         userRepository.saveAll(users);
         conservation.setGroupId(gr.getId());
         conservation.setGroup(toDto.map(gr, GroupDto.class));
+
         simpMessagingTemplate.convertAndSend("/messages/users." + user.getId(), SocketPayload.create(conservation, CONSTS.NEW_GROUP));
         for (Member mem : input.getMember()) {
             simpMessagingTemplate.convertAndSend("/messages/users." + mem.getUserId(), SocketPayload.create(conservation, CONSTS.NEW_GROUP));
@@ -153,6 +156,11 @@ public class GroupService implements IGroupService {
             throw new NotFoundException("Not found user");
         if (group == null)
             throw new NotFoundException("Not found group");
+        for (Member mem : group.getMembers()) {
+            if (mem.getUserId().equals(memberId)) {
+                throw new BadRequestException("You are member of group");
+            }
+        }
         if (userId != null) {
             user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Not found user"));
             // check user exist

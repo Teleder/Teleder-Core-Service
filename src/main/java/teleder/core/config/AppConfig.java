@@ -34,8 +34,11 @@ public class AppConfig implements WebMvcConfigurer {
     @Value("${cloudinary.api-secret}")
     private String apiSecret;
 
-    @Autowired
-    private GlobalApiLoggerInterceptor globalApiLoggerInterceptor;
+    private final GlobalApiLoggerInterceptor globalApiLoggerInterceptor;
+
+    public AppConfig(GlobalApiLoggerInterceptor globalApiLoggerInterceptor) {
+        this.globalApiLoggerInterceptor = globalApiLoggerInterceptor;
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

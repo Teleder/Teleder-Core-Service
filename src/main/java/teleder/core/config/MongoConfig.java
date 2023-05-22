@@ -35,13 +35,11 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     protected String getDatabaseName() {
         return "Teleder";
     }
-
     @Override
     public MongoClient mongoClient() {
         ConnectionString connectionString = new ConnectionString(mongoUri);
         return MongoClients.create(connectionString);
     }
-
     @Override
     public MappingMongoConverter mappingMongoConverter(MongoDatabaseFactory databaseFactory, MongoCustomConversions customConversions, MongoMappingContext mappingContext) {
         DbRefResolver dbRefResolver = new DefaultDbRefResolver(databaseFactory);
@@ -49,8 +47,6 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
         mappingConverter.setTypeMapper(new DefaultMongoTypeMapper(null));
         return mappingConverter;
     }
-
-
 }
 
 

@@ -27,11 +27,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebSocketEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketEventListener.class);
-    private Map<String, String> sessionIdToUsernameMap = new ConcurrentHashMap<>();
-    @Autowired
-    private SimpMessageSendingOperations messagingTemplate;
-    @Autowired
-    private IUserRepository userRepository;
+    private final Map<String, String> sessionIdToUsernameMap = new ConcurrentHashMap<>();
+    private final SimpMessageSendingOperations messagingTemplate;
+    private final IUserRepository userRepository;
+
+    public WebSocketEventListener(SimpMessageSendingOperations messagingTemplate, IUserRepository userRepository) {
+        this.messagingTemplate = messagingTemplate;
+        this.userRepository = userRepository;
+    }
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {

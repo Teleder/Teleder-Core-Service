@@ -6,6 +6,5 @@ import teleder.core.services.User.dtos.UserBasicDto;
 
 @Data
 public class ConservationPrivateDto {
-    private String userId_1;
-    private String userId_2;
+    private String user;
 }

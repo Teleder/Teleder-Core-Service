@@ -10,10 +10,8 @@ public class TwilioConfiguration {
 
     @Value("${twilio.account_sid}")
     private String accountSid;
-
     @Value("${twilio.auth_token}")
     private String authToken;
-
     @PostConstruct
     public void init() {
         Twilio.init(accountSid, authToken);
