@@ -78,7 +78,6 @@ public class ConservationService implements IConservationService {
             for (Conservation conservation : conservations) {
                 populateConservation(mongoTemplate, conservation, toDto);
             }
-
             return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(conservationIds.size(), skip, limit), conservations));
         }
         return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(0, skip, limit), new ArrayList<>()));

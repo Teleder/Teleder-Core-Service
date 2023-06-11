@@ -43,16 +43,12 @@ public class Conservation extends BaseModel implements Comparable<Conservation> 
         this.userId_1 = userId_1;
         this.groupId = groupId;
     }
-
-
     public Conservation(String groupId) {
         this.groupId = groupId;
         this.type = CONSTS.MESSAGE_GROUP;
     }
-
     public Conservation() {
     }
-
     @Override
     public int compareTo(Conservation o) {
         return o.getUpdateAt().compareTo(this.getCreateAt());

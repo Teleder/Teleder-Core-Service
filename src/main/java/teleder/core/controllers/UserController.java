@@ -1,9 +1,10 @@
 package teleder.core.controllers;
 
 import com.google.zxing.WriterException;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -23,12 +24,17 @@ import java.util.concurrent.ExecutionException;
 
 @RestController
 @ApiPrefixController("users")
+@Validated
 public class UserController {
-    @Autowired
+    final
     IUserService userService;
 
+    public UserController(IUserService userService) {
+        this.userService = userService;
+    }
+
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserDto> create(@RequestBody CreateUserDto input) throws IOException, ExecutionException, InterruptedException, WriterException {
+    public CompletableFuture<UserDto> createUser(@Valid @RequestBody CreateUserDto input) throws IOException, ExecutionException, InterruptedException, WriterException {
         return userService.create(input);
     }
 
@@ -49,7 +55,7 @@ public class UserController {
     @Authenticate
     @RequiresAuthorization("ADMIN")
     @PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserDto> update(@PathVariable String id, @RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
+    public CompletableFuture<UserDto> update(@PathVariable String id, @Valid @RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
         return userService.update(id, input);
     }
 
@@ -70,7 +76,7 @@ public class UserController {
 
     @Authenticate
     @PatchMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserDto> updateProfile(@RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
+    public CompletableFuture<UserDto> updateProfile(@Valid @RequestBody UpdateUserDto input) throws InvocationTargetException, IllegalAccessException {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return userService.update(userId, input);
     }
@@ -129,7 +135,7 @@ public class UserController {
 
     @Authenticate
     @PatchMapping(value = "/remove-request-friend", produces = MediaType.APPLICATION_JSON_VALUE)
-    public CompletableFuture<UserProfileDto> removeRequestFriend( String contactId) {
+    public CompletableFuture<UserProfileDto> removeRequestFriend(String contactId) {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return userService.removeRequestFriend(userId, contactId);
     }
@@ -137,6 +143,7 @@ public class UserController {
     @Authenticate
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
     public CompletableFuture<List<UserBasicDto>> searchUser(@RequestParam String searchText) {
-        return userService.searchUser(searchText);
+        String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
+        return userService.searchUser(userId, searchText);
     }
 }

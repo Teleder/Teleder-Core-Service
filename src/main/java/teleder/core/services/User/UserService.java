@@ -151,6 +151,7 @@ public class UserService implements IUserService, UserDetailsService {
             if (c.getUserId().equals(contactId))
                 throw new BadRequestException("Cannot perform this action");
         }
+
         user.getList_contact().add(new Contact(contactId, Contact.Status.WAITING));
         contact.getList_contact().add(new Contact(userId, Contact.Status.REQUEST));
         userRepository.save(user);
@@ -326,13 +327,13 @@ public class UserService implements IUserService, UserDetailsService {
             if (conservations.size() == 0) {
                 conservation = new Conservation(userId, contact_id, null);
                 conservation.setCode(UUID.randomUUID().toString());
+                Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
+                mess = messageRepository.save(mess);
+                conservation.setLastMessage(mess);
+                conservation = conservationRepository.save(conservation);
             } else {
                 conservation = conservations.get(0);
             }
-            Message mess = new Message("Friend from " + LocalDate.now().format(formatter), conservation.getCode(), CONSTS.ACCEPT_CONTACT);
-            mess = messageRepository.save(mess);
-            conservation.setLastMessage(mess);
-            conservation = conservationRepository.save(conservation);
             for (Contact f : user.getList_contact()) {
                 if (f.getUserId().contains(contact.getId())) {
                     f.setStatus(Contact.Status.ACCEPT);
@@ -356,12 +357,14 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Async
     @Override
-    public CompletableFuture<List<UserBasicDto>> searchUser(String searchText) {
+    public CompletableFuture<List<UserBasicDto>> searchUser(String userId, String searchText) {
         Criteria criteria = new Criteria();
         criteria.orOperator(
                 Criteria.where("phone").regex(searchText, "i"),
+                Criteria.where("email").regex(searchText, "i"),
+                Criteria.where("displayName").regex(searchText, "i"),
                 Criteria.where("bio").regex(searchText, "i")
-        );
+        ).and("id").ne(userId);
         Query query = new Query(criteria);
         List<User> users = mongoTemplate.find(query, User.class);
         toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);

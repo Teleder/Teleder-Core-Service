@@ -109,6 +109,7 @@ public class MessageService implements IMessageService {
         }
 
         simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(message, CONSTS.MESSAGE_PRIVATE));
+        simpMessagingTemplate.convertAndSend("/messages/user." + user.getId(), SocketPayload.create(message, CONSTS.MESSAGE_PRIVATE));
         return CompletableFuture.completedFuture(message);
     }
 

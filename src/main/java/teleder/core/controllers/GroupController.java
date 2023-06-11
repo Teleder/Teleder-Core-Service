@@ -33,8 +33,8 @@ public class GroupController {
     }
 
     @Authenticate
-    @PostMapping("/create")
-    public CompletableFuture<GroupDto> create(@RequestBody CreateGroupDto input) throws IOException, ExecutionException, InterruptedException, WriterException {
+    @PostMapping("/")
+    public CompletableFuture<GroupDto> createGroup(@RequestBody CreateGroupDto input) throws IOException, ExecutionException, InterruptedException, WriterException {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return groupService.createGroup(userId, input);
     }

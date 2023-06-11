@@ -4,8 +4,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.net.InetAddress;
 import java.util.UUID;
@@ -13,21 +15,31 @@ import java.util.UUID;
 @Component
 public class GlobalApiLoggerInterceptor implements HandlerInterceptor {
     private static final Logger logger = LoggerFactory.getLogger(GlobalApiLoggerInterceptor.class);
+
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         if (request.getRequestURI().contains("api")) {
+            if (response instanceof ContentCachingResponseWrapper responseWrapper) {
+                byte[] responseBody = responseWrapper.getContentAsByteArray();
+                String responseData = new String(responseBody, responseWrapper.getCharacterEncoding());
+                logger.info("Response Time: {} ms", responseData);
+            }
             String requestId = (String) request.getAttribute("requestId");
             String requestIP = (String) request.getAttribute("requestIP");
             String responseStatus = String.valueOf(response.getStatus());
             String responseTime = String.valueOf(System.currentTimeMillis() - (Long) request.getAttribute("startTime"));
             logger.info("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
             logger.info("Request ID: " + "\u001B[32m" + "{}" + "\u001B[0m", requestId);
+            logger.info("Request URL: {}", request.getRequestURI());
             logger.info("Request IP: {}", requestIP);
             logger.info("Request Method: " + "\u001B[32m" + "{}" + "\u001B[0m", request.getMethod());
             logger.info("Response Status: {}", responseStatus);
             logger.info("Response Time: {} ms", responseTime);
+            if (ex != null) {
+                logger.error("Exception: ", ex);
+            }
         }else{
-            logger.info("Request IP: {}",  request.getRemoteAddr());
+                logger.info("Request IP: {}",  request.getRemoteAddr());
         }
     }
     @Override
@@ -39,4 +51,5 @@ public class GlobalApiLoggerInterceptor implements HandlerInterceptor {
         }
         return true;
     }
+
 }
