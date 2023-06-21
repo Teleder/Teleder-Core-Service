@@ -7,6 +7,7 @@ public class CONSTS {
     // MESSAGE
     public final static String MESSAGE_PRIVATE = "USER";
     public final static String MESSAGE_GROUP = "GROUP";
+    public final static String REQUEST_FIEND = "REQUEST_FIEND";
     public final static String READ_RECEIPT = "read";
     public final static String DELIVERY_RECEIPT = "delivery";
     public final static String CHATTING = "CHATTING";

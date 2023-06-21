@@ -78,6 +78,9 @@ public class ConservationService implements IConservationService {
             for (Conservation conservation : conservations) {
                 populateConservation(mongoTemplate, conservation, toDto);
             }
+            conservations.sort((c1, c2) ->
+                    c2.getLastMessage().getUpdateAt().compareTo(c1.getLastMessage().getCreateAt()));
+
             return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(conservationIds.size(), skip, limit), conservations));
         }
         return CompletableFuture.completedFuture(PagedResultDto.create(new Pagination(0, skip, limit), new ArrayList<>()));
@@ -119,7 +122,7 @@ public class ConservationService implements IConservationService {
 
     @Override
     @Async
-    public CompletableFuture<Conservation> createPrivateConservation(String userId,ConservationPrivateDto input) {
+    public CompletableFuture<Conservation> createPrivateConservation(String userId, ConservationPrivateDto input) {
         Conservation conservation = new Conservation();
         conservation.setUserId_1(userId);
         conservation.setUserId_2(input.getUser());
@@ -134,7 +137,8 @@ public class ConservationService implements IConservationService {
     public CompletableFuture<Conservation> createGroupConservation(ConservationGroupDto input) {
         Conservation conservation = new Conservation();
         conservation.setGroupId(input.getGroupId());
-        conservation.setType(CONSTS.MESSAGE_GROUP);        toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        conservation.setType(CONSTS.MESSAGE_GROUP);
+        toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
 
         return CompletableFuture.completedFuture(toDto.map(conservationRepository.save(conservation), Conservation.class));
     }

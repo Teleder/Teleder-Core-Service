@@ -17,8 +17,8 @@ public class UserDto extends UpdateUserDto {
     private String id;
     @JsonProperty(value = "qr")
     private File qr;
-    @Override
-    public String getPassword() {
-        return null; // Ignore password validation
-    }
+//    @Override
+//    public String getPassword() {
+//        return null; // Ignore password validation
+//    }
 }

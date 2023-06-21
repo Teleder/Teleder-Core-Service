@@ -23,7 +23,7 @@ public interface IMessageService extends IMongoService<MessageDto, CreateMessage
 
     CompletableFuture<Message> markAsDelivered(String code);
 
-    CompletableFuture<Message> markAsRead(String code);
+    CompletableFuture<Message> markAsRead(String id);
 
     public CompletableFuture<Object> sendAction(PayloadAction input);
 

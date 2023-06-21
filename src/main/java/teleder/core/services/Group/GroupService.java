@@ -129,7 +129,7 @@ public class GroupService implements IGroupService {
         }
         messages = messageRepository.saveAll(messages);
         conservation.setLastMessage(messages.get(messages.size() - 1));
-        conservation =  conservationRepository.save(conservation);
+        conservation = conservationRepository.save(conservation);
         gr.setCode(conservation.getCode());
         groupRepository.save(gr);
         user.getConservations().add(conservation.getId());
@@ -137,10 +137,9 @@ public class GroupService implements IGroupService {
         userRepository.saveAll(users);
         conservation.setGroupId(gr.getId());
         conservation.setGroup(toDto.map(gr, GroupDto.class));
-
-        simpMessagingTemplate.convertAndSend("/messages/users." + user.getId(), SocketPayload.create(conservation, CONSTS.NEW_GROUP));
+        simpMessagingTemplate.convertAndSend("/messages/user." + userId, SocketPayload.create(conservation, CONSTS.NEW_GROUP));
         for (Member mem : input.getMember()) {
-            simpMessagingTemplate.convertAndSend("/messages/users." + mem.getUserId(), SocketPayload.create(conservation, CONSTS.NEW_GROUP));
+            simpMessagingTemplate.convertAndSend("/messages/user." + mem.getUserId(), SocketPayload.create(conservation, CONSTS.NEW_GROUP));
         }
         return CompletableFuture.completedFuture(toDto.map(gr, GroupDto.class));
     }
@@ -401,7 +400,7 @@ public class GroupService implements IGroupService {
 
     @Override
     @Async
-        public CompletableFuture<Void> responseMemberJoin(String groupId, String memberId, Boolean accept) {
+    public CompletableFuture<Void> responseMemberJoin(String groupId, String memberId, Boolean accept) {
         if (accept) {
             Group group = groupRepository.findById(groupId).orElse(null);
             if (group == null) {
@@ -557,15 +556,18 @@ public class GroupService implements IGroupService {
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
 
         // Get the group
-        Group group = groupRepository.findById(groupId).orElseThrow(() -> new NotFoundException("Group not found"));
+        Group group = groupRepository.findById(groupId).orElse(null);
 
         // Get the list of friend ids
-        List<String> friendIds = user.getList_contact().stream()
-                .map(Contact::getUserId)
-                .collect(Collectors.toList());
+        List<String> friendIds = new ArrayList<>();
+        user.getList_contact().forEach(x -> {
+            if (x.getStatus().equals(Contact.Status.ACCEPT))
+                friendIds.add(x.getUserId());
+        });
 
         // Get the list of group member ids
-        List<String> groupMemberIds = group.getMembers().stream()
+        List<?> groupMemberIds = group == null
+                ? new ArrayList<>() : group.getMembers().stream()
                 .map(Member::getUserId).toList();
 
         // Get the list of blocked user ids
@@ -697,13 +699,14 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Void> delete(String userID, String id) {
-        Group group =   groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group not found"));
+        Group group = groupRepository.findById(id).orElseThrow(() -> new NotFoundException("Group not found"));
         if (!group.getUser_own().getId().contains(userID)) {
             throw new UnauthorizedException("You do not have permission to do that");
         }
         groupRepository.delete(group);
         return null;
     }
+
     @Override
     @Async
     public CompletableFuture<Void> delete(String id) {

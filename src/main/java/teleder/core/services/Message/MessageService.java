@@ -279,8 +279,8 @@ public class MessageService implements IMessageService {
 
     @Override
     @Async
-    public CompletableFuture<Message> markAsRead(String code) {
-        Message message = messageRepository.findByCode(code).orElse(null);
+    public CompletableFuture<Message> markAsRead(String id) {
+        Message message = messageRepository.findById(id).orElse(null);
         if (message == null)
             throw new NotFoundException("Not Found Message!");
         message.setReadAt(new Date());

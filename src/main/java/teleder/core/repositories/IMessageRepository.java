@@ -17,7 +17,7 @@ public interface IMessageRepository extends MongoRepository<Message, String> {
     List<Message> findMessagesWithPaginationAndSearch(long skip, int limit, String code, String content);
 
     @Aggregation(pipeline = {
-            "{  $match: { isDeleted: false, idParent: null,$or: [ { code: ?0 }, { content: { $regex: ?1, $options: 'i' } } ] } }",
+            "{  $match: { isDeleted: false, idParent: null,code: ?0 ,  content: { $regex: ?1, $options: 'i' } } }",
             "{ $group: { _id: null, count: { $sum: 1 } } }",
             "{ $project: { _id: 0 } }"
     })

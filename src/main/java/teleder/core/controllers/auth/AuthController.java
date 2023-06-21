@@ -76,7 +76,10 @@ public class AuthController {
         final String refreshToken = jwtUtil.generateRefreshToken(users.get(0));
         toDto.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         for (Contact c : users.get(0).getList_contact()) {
-            c.setUser(toDto.map(userRepository.findById(c.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user")), UserBasicDto.class));
+            User u = userRepository.findById(c.getUserId()).orElse(null);
+            if (u != null)
+                c.setUser(toDto.map(u, UserBasicDto.class))
+                        ;
         }
         return ResponseEntity.ok(new LoginDto(accessToken, refreshToken, toDto.map(users.get(0), UserProfileDto.class)));
     }
@@ -98,6 +101,7 @@ public class AuthController {
         }
         throw new Exception("Invalid refresh token");
     }
+
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPasswordByToken(@RequestBody PayLoadResetPasswordByPhone input) {
         User user = userRepository.findByTokenResetPassword(URLDecoder.decode(input.getToken())).orElseThrow(() -> new NotFoundException("User not found"));
@@ -114,6 +118,7 @@ public class AuthController {
         userRepository.save(user);
         return ResponseEntity.ok(true);
     }
+
     @PostMapping("/request-pin/{phone}")
     public void requestPin(@PathVariable("phone") String phoneNumber) {
         User user = userRepository.findByPhoneNumber(phoneNumber).orElseThrow(() -> new NotFoundException("Phone not found"));
@@ -127,6 +132,7 @@ public class AuthController {
         String messageText = "Mã xác thực của bạn là: " + token.getToken();
         smsService.sendSMS(phoneNumber.replaceFirst("^0", "+84"), messageText);
     }
+
     @PostMapping("/validate-pin/{phone}")
     public ResponseEntity<?> validatePin(@PathVariable String phone, @RequestBody TokenDto input) throws UnsupportedEncodingException {
         User user = userRepository.findByPhoneNumber(phone).orElseThrow(() -> new NotFoundException("User not found"));
@@ -143,6 +149,7 @@ public class AuthController {
 
         return ResponseEntity.ok(URLEncoder.encode(user.getTokenResetPassword(), "UTF-8"));
     }
+
     private String generateRandomDigits() {
         Random random = new Random();
         StringBuilder sb = new StringBuilder(6);

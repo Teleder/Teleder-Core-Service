@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Document(collection = "Conservation")
 @Data
-public class Conservation extends BaseModel implements Comparable<Conservation> {
+public class Conservation extends BaseModel {
     boolean status = true;
     @Id
     private String id;
@@ -43,15 +43,14 @@ public class Conservation extends BaseModel implements Comparable<Conservation> 
         this.userId_1 = userId_1;
         this.groupId = groupId;
     }
+
     public Conservation(String groupId) {
         this.groupId = groupId;
         this.type = CONSTS.MESSAGE_GROUP;
     }
+
     public Conservation() {
     }
-    @Override
-    public int compareTo(Conservation o) {
-        return o.getUpdateAt().compareTo(this.getCreateAt());
-    }
+
 }
 

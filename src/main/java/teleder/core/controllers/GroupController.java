@@ -1,6 +1,8 @@
 package teleder.core.controllers;
 
 import com.google.zxing.WriterException;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -34,7 +36,7 @@ public class GroupController {
 
     @Authenticate
     @PostMapping("/")
-    public CompletableFuture<GroupDto> createGroup(@RequestBody CreateGroupDto input) throws IOException, ExecutionException, InterruptedException, WriterException {
+    public CompletableFuture<GroupDto> createGroup(@Valid @RequestBody CreateGroupDto input) throws IOException, ExecutionException, InterruptedException, WriterException {
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return groupService.createGroup(userId, input);
     }
@@ -127,7 +129,7 @@ public class GroupController {
 
     @Authenticate
     @PostMapping("/{groupId}/create-role")
-    CompletableFuture<Group> createRoleForGroup(@PathVariable String groupId, @RequestBody RoleDto roleRequest) {
+    CompletableFuture<Group> createRoleForGroup(@PathVariable String groupId, @Valid @RequestBody RoleDto roleRequest) {
         return groupService.createRoleForGroup(groupId, roleRequest);
     }
 

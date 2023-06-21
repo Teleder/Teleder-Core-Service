@@ -1,6 +1,7 @@
 package teleder.core.controllers;
 
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import jakarta.validation.Valid;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -53,7 +54,7 @@ public class ConservationController {
 
     @Authenticate
     @PostMapping("/create-private")
-    public CompletableFuture<Conservation> createPrivateConservation(@RequestBody ConservationPrivateDto input){
+    public CompletableFuture<Conservation> createPrivateConservation(@Valid @RequestBody ConservationPrivateDto input){
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return conservationService.createPrivateConservation(userId, input);
     }
@@ -61,7 +62,7 @@ public class ConservationController {
 
     @Authenticate
     @PostMapping("/create-group")
-    public CompletableFuture<Conservation> createGroupConservation(@RequestBody ConservationGroupDto input){
+    public CompletableFuture<Conservation> createGroupConservation(@Valid @RequestBody ConservationGroupDto input){
         String userId = ((UserDetails) (((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getAttribute("user"))).getUsername();
         return conservationService.createGroupConservation(input);
     }

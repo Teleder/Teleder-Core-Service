@@ -1,5 +1,6 @@
 package teleder.core.controllers;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
@@ -25,19 +26,19 @@ public class MessageController {
 
     @Authenticate
     @PostMapping("/privateMessage/{recipientId}")
-    public CompletableFuture<Message> sendPrivateMessage(@PathVariable("recipientId") String recipientId, @RequestBody PayloadMessage message) {
+    public CompletableFuture<Message> sendPrivateMessage(@PathVariable("recipientId") String recipientId, @Valid @RequestBody PayloadMessage message) {
         return messageService.sendPrivateMessage(recipientId, message);
     }
 
     @Authenticate
     @PostMapping("/sendAction")
-    public CompletableFuture<Object> sendAction(@RequestBody PayloadAction input) {
+    public CompletableFuture<Object> sendAction(@Valid @RequestBody PayloadAction input) {
         return messageService.sendAction(input);
     }
 
     @Authenticate
     @PostMapping("/groupMessage/{groupId}")
-    public CompletableFuture<Message> sendGroupMessage(@PathVariable("groupId") String groupId, @RequestBody PayloadMessage message) {
+    public CompletableFuture<Message> sendGroupMessage(@PathVariable("groupId") String groupId, @Valid @RequestBody PayloadMessage message) {
         return messageService.sendGroupMessage(groupId, message);
     }
 
@@ -109,14 +110,12 @@ public class MessageController {
         throw new RuntimeException("Some thing went wrong!");
     }
 
-    @Async
     @Authenticate
-    @PatchMapping("/mark-as-read/{code}")
-    public void markAsRead(@PathVariable(name = "code") String code) {
-        messageService.markAsRead(code);
+    @PatchMapping("/mark-as-read/{id}")
+    public void markAsRead(@PathVariable(name = "id") String id) {
+        messageService.markAsRead(id);
     }
 
-    @Async
     @Authenticate
     @PatchMapping("/mark-as-delivered/{code}")
     public void markAsDelivered(@PathVariable(name = "code") String code) {

@@ -102,9 +102,10 @@ public class UserService implements IUserService, UserDetailsService {
         User user = userRepository.findById(id).orElse(null);
         if (user == null)
             throw new NotFoundException("Not found user!");
-
         for (Contact c : user.getList_contact()) {
-            c.setUser(toDto.map(userRepository.findById(c.getUserId()).orElseThrow(() -> new NotFoundException("Cannot find user")), UserBasicDto.class));
+            User u = userRepository.findById(c.getUserId()).orElse(null);
+            if (u != null)
+                c.setUser(toDto.map(u, UserBasicDto.class));
         }
         return CompletableFuture.completedFuture(toDto.map(user, UserProfileDto.class));
     }
@@ -151,12 +152,11 @@ public class UserService implements IUserService, UserDetailsService {
             if (c.getUserId().equals(contactId))
                 throw new BadRequestException("Cannot perform this action");
         }
-
         user.getList_contact().add(new Contact(contactId, Contact.Status.WAITING));
         contact.getList_contact().add(new Contact(userId, Contact.Status.REQUEST));
         userRepository.save(user);
         userRepository.save(contact);
-        simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.MESSAGE_GROUP));
+        simpMessagingTemplate.convertAndSend("/messages/user." + contactId, SocketPayload.create(new ContactInfoDto(user), CONSTS.REQUEST_FIEND));
         return CompletableFuture.completedFuture(true);
     }
 
@@ -388,10 +388,6 @@ public class UserService implements IUserService, UserDetailsService {
         }
         return CompletableFuture.completedFuture(contacts);
     }
-
-
-
-
 
 
     // Basic CRUD
