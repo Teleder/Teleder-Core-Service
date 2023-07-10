@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.concurrent.Executor;
 
-@Configuration
+@Configuration("SystemConfig")
 public class AppConfig implements WebMvcConfigurer {
     @Value("${cloudinary.cloud-name}")
     private String cloudName;
