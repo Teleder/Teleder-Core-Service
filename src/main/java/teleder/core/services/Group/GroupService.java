@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
+import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -41,6 +42,7 @@ import teleder.core.services.Group.dtos.RoleDto;
 import teleder.core.services.Group.dtos.UpdateGroupDto;
 import teleder.core.services.User.dtos.UserBasicDto;
 import teleder.core.utils.CONSTS;
+import teleder.core.utils.CustomAggregationOperation;
 import teleder.core.utils.QRCodeGenerator;
 
 import java.io.IOException;
@@ -180,6 +182,7 @@ public class GroupService implements IGroupService {
                 // add conservation to user
                 Message mess = new Message(user.getDisplayName() != null ? "User" : user.getDisplayName() + " added " + member.getDisplayName() + " to group", group.getCode(), CONSTS.ADD_MEMBER_TO_GROUP);
                 mess = messageRepository.save(mess);
+                simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.MESSAGE_GROUP));
                 simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.ADD_MEMBER_TO_GROUP));
                 userRepository.save(member);
             } else {
@@ -453,31 +456,65 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<List<Member>> getMembersPaginate(String groupId, String search, long skip, int limit) {
-        Aggregation aggregation = Aggregation.newAggregation(
+        String query =
+                "    {\n" +
+                        "        \"$unwind\": \"$members\"\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "        \"$lookup\": {\n" +
+                        "            \"from\": \"User\",\n" +
+                        "            \"localField\": \"members.userId\",\n" +
+                        "            \"foreignField\": \"_id\",\n" +
+                        "            \"as\": \"users\"\n" +
+                        "        }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "        \"$skip\": 0\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "        \"$limit\": 1000\n" +
+                        "    }\n";
+        String query1 = "{\n" +
+                "    \"$set\": {\n" +
+                "      \"userid\": {$toObjectId: \"$members.userId\"}}\n" +
+                "    },\n" +
+                "  }";
+        String query2 = "    {\n" +
+                "        \"$lookup\": {\n" +
+                "            \"from\": \"User\",\n" +
+                " \"let\": {\"userid\": {$toObjectId: \"$members.userId\"}} " +
+                "\"pipeline\":[" +
+                "{\"$match\": {\"$expr\":[ {\"_id\": \"$$userid\"}]}}\n" +
+//                "{\"$project\":{\"_id\": 1}}" +
+                "]," +
+                "            \"as\": \"users\"\n" +
+                "        }\n" +
+                "    },\n";
+        TypedAggregation<Group> test = Aggregation.newAggregation(
+                Group.class,
                 Aggregation.match(Criteria.where("_id").is(groupId)),
-                Aggregation.unwind("members"),
-                Aggregation.lookup("user", "members.userId", "_id", "members.user"),
-                Aggregation.addFields()
-                        .addFieldWithValue("members.userId", ArrayOperators.arrayOf("members.user").elementAt(0)).build(),
-                Aggregation.match(Criteria.where("members.user.displayName").regex(Pattern.compile(search, Pattern.CASE_INSENSITIVE))),
-                Aggregation.project("members"),
-                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
+                new CustomAggregationOperation(query),
+                new CustomAggregationOperation(query1),
+                Aggregation.lookup("User", "userid", "_id", "users"),
+                Aggregation.addFields().addFieldWithValue("user", ArrayOperators.arrayOf("users").elementAt(0)).build(),
+                Aggregation.match(Criteria.where("user.displayName").regex(Pattern.compile(search, Pattern.CASE_INSENSITIVE))),
                 Aggregation.skip(skip),
                 Aggregation.limit(limit)
+//                new CustomAggregationOperation(query2)
         );
-
-        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, Group.class, Document.class);
+        AggregationResults<Document> results = mongoTemplate.aggregate(test, Group.class, Document.class);
         List<Document> documents = results.getMappedResults();
 
         return CompletableFuture.completedFuture(documents.stream()
                 .map(doc -> {
                     Document memberDoc = doc.get("members", Document.class);
-                    User user = mongoTemplate.getConverter().read(User.class, memberDoc.get("user", Document.class));
-                    User addedBy = mongoTemplate.getConverter().read(User.class, memberDoc.get("addedBy", Document.class));
+                    User user = mongoTemplate.getConverter().read(User.class, doc.get("user", Document.class));
+                    String addedBy = memberDoc.getString("addedByUserId");
                     Member.Status status = Member.Status.valueOf(memberDoc.getString("status"));
+                    Role role = mongoTemplate.getConverter().read(teleder.core.models.Group.Role.class, memberDoc.get("role", Document.class));
                     Date createAt = memberDoc.getDate("createAt");
                     Date updateAt = memberDoc.getDate("updateAt");
-                    Member member = new Member(user.getId(), addedBy.getId(), status);
+                    Member member = new Member(user.getId(), status, addedBy, toDto.map(user, UserBasicDto.class), role);
                     member.setCreateAt(createAt);
                     member.setUpdateAt(updateAt);
                     return member;
@@ -488,18 +525,50 @@ public class GroupService implements IGroupService {
     @Override
     @Async
     public CompletableFuture<Integer> countMemberGroup(String groupId, String search) {
-        Aggregation aggregation = Aggregation.newAggregation(
+        String query =
+                "    {\n" +
+                        "        \"$unwind\": \"$members\"\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "        \"$lookup\": {\n" +
+                        "            \"from\": \"User\",\n" +
+                        "            \"localField\": \"members.userId\",\n" +
+                        "            \"foreignField\": \"_id\",\n" +
+                        "            \"as\": \"users\"\n" +
+                        "        }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "        \"$skip\": 0\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "        \"$limit\": 1000\n" +
+                        "    }\n";
+        String query1 = "{\n" +
+                "    \"$set\": {\n" +
+                "      \"userid\": {$toObjectId: \"$members.userId\"}}\n" +
+                "    },\n" +
+                "  }";
+        String query2 = "    {\n" +
+                "        \"$lookup\": {\n" +
+                "            \"from\": \"User\",\n" +
+                " \"let\": {\"userid\": {$toObjectId: \"$members.userId\"}} " +
+                "\"pipeline\":[" +
+                "{\"$match\": {\"$expr\":[ {\"_id\": \"$$userid\"}]}}\n" +
+                "]," +
+                "            \"as\": \"users\"\n" +
+                "        }\n" +
+                "    },\n";
+        TypedAggregation<Group> test = Aggregation.newAggregation(
+                Group.class,
                 Aggregation.match(Criteria.where("_id").is(groupId)),
-                Aggregation.unwind("members"),
-                Aggregation.lookup("user", "members.userId", "_id", "members.user"),
-                Aggregation.addFields()
-                        .addFieldWithValue("members.userId", ArrayOperators.arrayOf("members.user").elementAt(0)).build(),
-                Aggregation.match(Criteria.where("members.user.displayName").regex(Pattern.compile(search, Pattern.CASE_INSENSITIVE))),
-                Aggregation.project("members"),
-                Aggregation.sort(Sort.Direction.ASC, "list_contact.user.displayName"),
+                new CustomAggregationOperation(query),
+                new CustomAggregationOperation(query1),
+                Aggregation.lookup("User", "userid", "_id", "users"),
+                Aggregation.addFields().addFieldWithValue("user", ArrayOperators.arrayOf("users").elementAt(0)).build(),
+                Aggregation.match(Criteria.where("user.displayName").regex(Pattern.compile(search, Pattern.CASE_INSENSITIVE))),
                 Aggregation.group().count().as("count")
         );
-        return CompletableFuture.completedFuture(Objects.requireNonNull(mongoTemplate.aggregate(aggregation, Group.class, Document.class).getUniqueMappedResult()).getInteger("count"));
+        return CompletableFuture.completedFuture(Objects.requireNonNull(mongoTemplate.aggregate(test, Group.class, Document.class).getUniqueMappedResult()).getInteger("count"));
     }
 
     @Override
@@ -541,6 +610,8 @@ public class GroupService implements IGroupService {
             userRepository.save(user);
             groupRepository.save(group);
             Message mess = new Message(user.getDisplayName() + " has leave group", group.getCode(), CONSTS.LEAVE_GROUP);
+            user.getConservations().remove(groupId);
+            userRepository.save(user);
             mess = messageRepository.save(mess);
             simpMessagingTemplate.convertAndSend("/messages/group." + groupId, SocketPayload.create(mess, CONSTS.LEAVE_GROUP));
             return null;

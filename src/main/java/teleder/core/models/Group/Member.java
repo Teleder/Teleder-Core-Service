@@ -8,7 +8,9 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import teleder.core.models.User.User;
 import teleder.core.services.User.dtos.UserBasicDto;
+import teleder.core.utils.CONSTS;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 @Data
@@ -28,6 +30,7 @@ public class Member {
         this.userId = userId;
         this.addedByUserId = addedByUserId;
         this.status = status;
+        this.role =  new Role("Member", new ArrayList<>());
     }
     public Member(String userId) {
         this.userId = userId;
@@ -41,9 +44,13 @@ public class Member {
         this.role = owner;
         this.addedByUserId = addedByUserId;
     }
-
-
-
+    public Member(String userId, Status accept, String addedByUserId, UserBasicDto user ,Role role) {
+        this.userId = userId;
+        this.status = accept;
+        this.addedByUserId = addedByUserId;
+        this.user = user;
+        this.role = role;
+    }
     public enum Status {
         ACCEPT,
         WAITING,

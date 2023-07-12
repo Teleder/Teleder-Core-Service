@@ -350,7 +350,8 @@ public class UserService implements IUserService, UserDetailsService {
                     break;
                 }
             }
-            simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(contact), CONSTS.ACCEPT_CONTACT));
+            simpMessagingTemplate.convertAndSend("/messages/user." + userId, SocketPayload.create(new ContactInfoDto(contact), CONSTS.ACCEPT_CONTACT));
+            simpMessagingTemplate.convertAndSend("/messages/user." + contact_id, SocketPayload.create(new ContactInfoDto(user), CONSTS.ACCEPT_CONTACT));
             return CompletableFuture.completedFuture(true);
         }
     }

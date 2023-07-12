@@ -121,8 +121,7 @@ public class MessageService implements IMessageService {
         if (user == null)
             throw new NotFoundException("Not found user");
         switch (input.getAction()) {
-            case CONSTS.CHATTING:
-            case CONSTS.STOP_CHATTING: {
+            case CONSTS.CHATTING, CONSTS.STOP_CHATTING -> {
                 User contact = userRepository.findById(input.getReceiverId()).orElse(null);
                 if (contact == null)
                     throw new NotFoundException("Not found user");
@@ -130,7 +129,7 @@ public class MessageService implements IMessageService {
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 return CompletableFuture.completedFuture(null);
             }
-            case CONSTS.EMOJI: {
+            case CONSTS.EMOJI -> {
                 Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
                 if (mess == null)
                     throw new NotFoundException("Not found message");
@@ -142,14 +141,14 @@ public class MessageService implements IMessageService {
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 return CompletableFuture.completedFuture(mess);
             }
-            case CONSTS.NEW_REACTION: {
+            case CONSTS.NEW_REACTION -> {
                 if (input.getReceiverType() == CONSTS.MESSAGE_GROUP)
                     simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 else
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 return CompletableFuture.completedFuture(null);
             }
-            case CONSTS.EDIT_MESSAGE: {
+            case CONSTS.EDIT_MESSAGE -> {
                 Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
                 if (mess == null)
                     throw new NotFoundException("Not found message");
@@ -163,7 +162,7 @@ public class MessageService implements IMessageService {
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 return CompletableFuture.completedFuture(mess);
             }
-            case CONSTS.DELETE_MESSAGE: {
+            case CONSTS.DELETE_MESSAGE -> {
                 Message mess = messageRepository.findById(input.getMsgId()).orElse(null);
                 if (mess == null)
                     throw new NotFoundException("Not found message");
