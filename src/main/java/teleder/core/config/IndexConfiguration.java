@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class IndexConfiguration implements CommandLineRunner{
-
     @Value("${app.cicd.skip-command-line-runners:false}")
     private boolean skipCommandLineRunners;
     private final MongoTemplate mongoTemplate;
@@ -27,8 +26,6 @@ public class IndexConfiguration implements CommandLineRunner{
         createUniqueIndexIfNotExists(mongoTemplate, "phone");
         createUniqueIndexIfNotExists(mongoTemplate, "email");
     }
-
-
     private void createUniqueIndexIfNotExists(MongoTemplate mongoTemplate, String fieldName) {
         IndexOperations indexOperations = mongoTemplate.indexOps("User");
         IndexDefinition indexDefinition = new Index().on(fieldName, Sort.Direction.ASC).unique();

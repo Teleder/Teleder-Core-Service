@@ -126,9 +126,7 @@ public class MessageService implements IMessageService {
                 User contact = userRepository.findById(input.getReceiverId()).orElse(null);
                 if (contact == null)
                     throw new NotFoundException("Not found user");
-                if (input.getReceiverType().equals(CONSTS.MESSAGE_GROUP))
-                    simpMessagingTemplate.convertAndSend("/messages/group." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
-                else
+                if (input.getReceiverType().equals(CONSTS.MESSAGE_PRIVATE))
                     simpMessagingTemplate.convertAndSend("/messages/user." + input.getReceiverId(), SocketPayload.create(input, input.getAction()));
                 return CompletableFuture.completedFuture(null);
             }

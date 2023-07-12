@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class WebSocketEventListener {
-
     private static final Logger logger = LoggerFactory.getLogger(WebSocketEventListener.class);
     private final Map<String, String> sessionIdToUsernameMap = new ConcurrentHashMap<>();
     private final SimpMessageSendingOperations messagingTemplate;
