@@ -23,4 +23,5 @@ public class UpdateUserDto  {
     private File avatar;
     @JsonProperty(value = "blocks")
     private List<Block> blocks;
+    private String bio;
 }
